@@ -18,8 +18,13 @@ namespace WireShelf
         private static bool colorsOwned;
         public static bool Polylines { get; private set; }
         public static int Variant;
-        public static float Angle = 45;
 
+        // Horizontal departure and arrival; the middle segment adapts to both grips.
+        private static float Lead(PointF output, PointF input)
+        {
+            var dx = input.X-output.X;
+            return dx > 0 ? dx * 0.28F : Math.Max(24, Math.Abs(dx) * 0.28F);
+        }
         public static GraphicsPath Polyline(PointF output, PointF input)
         {
             var path = new GraphicsPath();
@@ -29,9 +34,7 @@ namespace WireShelf
             }
             else
             {
-                // Horizontal departure and arrival; the middle segment adapts to both grips.
-                var dx = input.X-output.X;
-                var lead = dx > 0 ? dx * 0.28F : Math.Max(24, Math.Abs(dx) * 0.28F);
+                var lead = Lead(output, input);
                 path.AddLines(new[] { output, new PointF(output.X+lead,output.Y),
                     new PointF(input.X-lead,input.Y), input });
             }
@@ -59,20 +62,26 @@ namespace WireShelf
             if (!Polylines) return;
             __result = DistanceToPolyline(source, target, locus);
         }
+        private static float Segment(PointF a, PointF b, PointF locus)
+        {
+            var closest = Closest(a, b, locus);
+            var dx = closest.X - locus.X; var dy = closest.Y - locus.Y;
+            return (float)Math.Sqrt(dx * dx + dy * dy);
+        }
+        // Grasshopper hit-tests every wire on the canvas as the pointer moves, so this
+        // walks the same corners as Polyline without building a GraphicsPath per wire
+        // and per move, which is what the patched hit test used to spend its time on.
         public static float DistanceToPolyline(PointF source, PointF target, PointF locus)
         {
-            var result = float.MaxValue;
-            using (var path = Polyline(source, target))
+            if (Variant == 0)
             {
-                var points = path.PathPoints;
-                for (int i = 1; i < points.Length; i++)
-                {
-                    var closest = Closest(points[i-1], points[i], locus);
-                    var dx = closest.X - locus.X; var dy = closest.Y - locus.Y;
-                    result = Math.Min(result, (float)Math.Sqrt(dx * dx + dy * dy));
-                }
+                var corner = new PointF(target.X, source.Y);
+                return Math.Min(Segment(source, corner, locus), Segment(corner, target, locus));
             }
-            return result;
+            var lead = Lead(source, target);
+            var a = new PointF(source.X+lead, source.Y);
+            var b = new PointF(target.X-lead, target.Y);
+            return Math.Min(Segment(source, a, locus), Math.Min(Segment(a, b, locus), Segment(b, target, locus)));
         }
 
         public static void SetPolylines(bool enabled)

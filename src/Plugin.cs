@@ -65,7 +65,9 @@ namespace WireShelf
                     try
                     {
                         library = store.Load() ?? Recipes.Defaults();
-                        var expanded = LibraryStore.Copy(library);
+                        // Freshly read from disk or freshly built, so the migrations can run
+                        // on it directly; a failure is discarded by the catch below anyway.
+                        var expanded = library;
                         var changed=BuiltInCatalog.Apply(expanded);
                         if(expanded.OperationsRevision<1) {
                             expanded.Sections.Add(new ShelfSection { Title="Operations",Items=new List<ShelfItem> {
@@ -98,7 +100,7 @@ namespace WireShelf
         {
             if (initialized) return; initialized = true; Enabled = true;
             try { toolboxSettings = ToolboxSettings.Load(ToolboxPath); } catch (Exception ex) { toolboxSettings = new ToolboxSettings(); Ui.Error(ex); }
-            WireStyles.Variant=toolboxSettings.WireVariant; WireStyles.Angle=toolboxSettings.WireAngle;
+            WireStyles.Variant=toolboxSettings.WireVariant;
             CanvasGestures.CutEnabled=toolboxSettings.CutWires; CanvasGestures.SnapEnabled=toolboxSettings.SnapAlign;
             Ui.Safe(()=>WireStyles.SetPolylines(toolboxSettings.Polylines));
             WireStyles.SetHighlight(toolboxSettings.Highlight,Color.FromArgb(toolboxSettings.SelectedArgb));
@@ -225,7 +227,7 @@ namespace WireShelf
                 {
                     WireStyles.SetHighlight(toolboxSettings.Highlight, Color.FromArgb(toolboxSettings.SelectedArgb));
                     try { WireStyles.SetPolylines(toolboxSettings.Polylines); } catch (Exception ex) { Ui.Error(ex); }
-                    toolbox = new Toolbox(canvas, toolboxSettings, ToolboxPath, delegate { toolbox.Dispose(); toolbox = null; });
+                    toolbox = new Toolbox(canvas, toolboxSettings, ToolboxPath);
                     canvas.Disposed += delegate { if (toolbox != null) { toolbox.Dispose(); toolbox = null; } };
                 }
                 toolbox.SelectTab(tab);
@@ -304,18 +306,6 @@ namespace WireShelf
         private static bool ModifierKeysHeld() { return Control.ModifierKeys != Keys.None; }
         internal static float Distance(PointF a, PointF b)
         { var x = a.X - b.X; var y = a.Y - b.Y; return (float)Math.Sqrt(x * x + y * y); }
-        private static Bitmap MakeIcon()
-        {
-            var bitmap = new Bitmap(24, 24);
-            using (var g = Graphics.FromImage(bitmap))
-            using (var pen = new Pen(Ui.Accent, 2.4F))
-            {
-                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                g.Clear(Color.Transparent); g.DrawLine(pen, 3, 12, 10, 12); g.DrawLine(pen, 10, 12, 16, 5);
-                g.DrawLine(pen, 10, 12, 16, 19); g.DrawEllipse(pen, 16, 2, 5, 5); g.DrawEllipse(pen, 16, 16, 5, 5);
-            }
-            return bitmap;
-        }
     }
 
     // The interaction extension point follows QuickConnection. Native wire movement and

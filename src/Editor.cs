@@ -32,7 +32,9 @@ namespace WireShelf
             tree.Dock = DockStyle.Fill; tree.HideSelection = false; tree.FullRowSelect = true; tree.ItemHeight = 30;
             tree.BorderStyle = BorderStyle.FixedSingle; tree.AccessibleName = "Sections and favorites, in display order";
             tree.AfterSelect += delegate { ShowDetails(); };
-            tree.NodeMouseDoubleClick += delegate { if (SelectedItem != null) EditItem(); };
+            // EditItem instantiates the favorite to list its ports, which throws when the
+            // component is not installed; unguarded that would surface as a crash.
+            tree.NodeMouseDoubleClick += delegate { if (SelectedItem != null) Ui.Safe(EditItem); };
             tree.KeyDown += delegate(object sender, KeyEventArgs e) {
                 if (e.KeyCode == Keys.F2) Ui.Safe(Rename);
                 if (e.Alt && (e.KeyCode == Keys.Up || e.KeyCode == Keys.Down)) { Ui.Safe(() => MoveItem(e.KeyCode == Keys.Up ? -1 : 1)); e.Handled = true; }
@@ -213,14 +215,18 @@ namespace WireShelf
         private sealed class Entry
         {
             internal IGH_ObjectProxy Proxy;
-            public override string ToString() { return Proxy.Desc.Name + "   /   " + Proxy.Desc.Category + " · " + Proxy.Desc.SubCategory; }
+            internal string Label;
+            public override string ToString() { return Label; }
         }
         private readonly Entry[] entries;
         internal Catalog()
         {
             Ui.Style(this, "Add installed component", new Size(615, 465));
+            // Built once: the label was rebuilt for every proxy on every keystroke and
+            // again for every rendered row, thousands of concatenations per character.
             entries = Instances.ComponentServer.ObjectProxies.Where(p => !p.Obsolete && p.Exposure != GH_Exposure.hidden)
-                .OrderBy(p => p.Desc.Name).Select(p => new Entry { Proxy = p }).ToArray();
+                .OrderBy(p => p.Desc.Name)
+                .Select(p => new Entry { Proxy = p, Label = p.Desc.Name + "   /   " + p.Desc.Category + " · " + p.Desc.SubCategory }).ToArray();
             search.Dock = DockStyle.Top; search.AccessibleName = "Search installed components";
             list.Dock = DockStyle.Fill; list.IntegralHeight = false; list.HorizontalScrollbar = true; list.ItemHeight = 24;
             var add = Ui.Button("Add", Pick, true); var bar = Ui.Bar(add); bar.Dock = DockStyle.Bottom;
@@ -231,7 +237,8 @@ namespace WireShelf
         private void Filter()
         {
             list.BeginUpdate(); list.Items.Clear();
-            foreach (var entry in entries) if (entry.ToString().IndexOf(search.Text.Trim(), StringComparison.CurrentCultureIgnoreCase) >= 0) list.Items.Add(entry);
+            var term = search.Text.Trim();
+            foreach (var entry in entries) if (entry.Label.IndexOf(term, StringComparison.CurrentCultureIgnoreCase) >= 0) list.Items.Add(entry);
             list.EndUpdate(); if (list.Items.Count > 0) list.SelectedIndex = 0;
         }
         private void Pick()

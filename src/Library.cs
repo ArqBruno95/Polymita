@@ -21,8 +21,11 @@ namespace WireShelf
             query = (query ?? "").Trim();
             foreach (var section in Sections)
             {
-                var items = section.Items.Where(x => query.Length == 0 ||
-                    Contains(section.Title, query) || Contains(x.Name, query) || Contains(x.Notes, query)).ToList();
+                // The section title is constant across its favorites; testing it inside the
+                // predicate scanned it once per favorite on every keystroke in the palette.
+                var whole = query.Length == 0 || Contains(section.Title, query);
+                var items = whole ? new List<ShelfItem>(section.Items)
+                    : section.Items.Where(x => Contains(x.Name, query) || Contains(x.Notes, query)).ToList();
                 if (items.Count > 0 || query.Length == 0)
                     yield return new ShelfSection { Id = section.Id, Title = section.Title, Items = items };
             }

@@ -11,7 +11,7 @@ internal sealed class Toolbox : IDisposable {
  readonly Dictionary<int,Form> windows=new Dictionary<int,Form>();
  RhinoViewportPane viewport; Splitter splitter; Timer repaint;
  internal bool ViewportVisible { get { return viewport!=null; } }
- internal Toolbox(GH_Canvas canvas,ToolboxSettings settings,string path,Action close) { this.canvas=canvas; this.settings=settings; this.path=path; }
+ internal Toolbox(GH_Canvas canvas,ToolboxSettings settings,string path) { this.canvas=canvas; this.settings=settings; this.path=path; }
  void Save() { Ui.Safe(()=>settings.Save(path)); }
  internal void SelectTab(int tab) {
   if(tab==0) { ToggleViewport(); return; }

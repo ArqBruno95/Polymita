@@ -86,6 +86,17 @@ public static class GestureTests
                 move=new AlignInteraction(canvas,E(0,0),CanvasOperations.ExpandSelection(doc));
                 move.RespondToMouseMove(canvas,E(70,55));move.Destroy();
                 Check(a.Attributes.Pivot==after,"Cancelled movement restores position");
+                // A right-to-left wire leaves its path outside the box of its own grips,
+                // which is the case the sweep's rejection box has to stay generous about.
+                var feed=Add(doc,new Param_Number(),600,900);
+                var back=Add(doc,new Param_Number(),100,900); back.AddSource(feed);
+                foreach(var obj in doc.Objects) { obj.Attributes.ExpireLayout();obj.Attributes.PerformLayout(); }
+                cut=new CutInteraction(canvas,E(300,800));cut.Sweep(new PointF(300,1000));
+                Check(back.SourceCount==0,"Backwards wire is reached outside the box of its grips");
+                cut.RespondToMouseUp(canvas,E(300,1000));cut.Destroy();
+                cut=new CutInteraction(canvas,E(300,800));cut.Sweep(new PointF(300,1000));
+                Check(target.SourceCount==2,"A stroke far from a wire leaves it connected");
+                cut.Destroy();
             }
             log.WriteLine(count+" gesture checks passed.");
         }

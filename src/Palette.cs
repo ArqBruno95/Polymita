@@ -102,7 +102,9 @@ namespace WireShelf
     internal sealed class IconGrid : ScrollableControl
     {
         private ShelfGridLayout layout;
-        private readonly Dictionary<Guid, Image> icons = new Dictionary<Guid, Image>();
+        // The component server is fixed for the session and a fresh grid is built every
+        // time the palette opens, so resolved proxies and their icons are shared.
+        private static readonly Dictionary<Guid, Image> icons = new Dictionary<Guid, Image>();
         private readonly ToolTip tip = new ToolTip { InitialDelay = 350, ReshowDelay = 80, AutoPopDelay = 8000 };
         private int selected = -1, hovered = -1;
         internal event Action<ShelfItem> ActivateItem;
@@ -161,14 +163,19 @@ namespace WireShelf
         {
             base.OnPaint(e); if (layout == null) return;
             e.Graphics.TranslateTransform(AutoScrollPosition.X, AutoScrollPosition.Y);
+            // Scrolling and hover repaints redraw a band, not the whole library.
+            var clip = e.ClipRectangle; clip.Offset(-AutoScrollPosition.X, -AutoScrollPosition.Y);
+            using (var paper = new SolidBrush(Ui.Paper))
             using (var font = new Font(Font.FontFamily, 8.5F, FontStyle.Bold))
                 foreach (var heading in layout.Headings) {
-                    using (var brush = new SolidBrush(Ui.Paper)) e.Graphics.FillRectangle(brush, heading.Bounds);
+                    if (!heading.Bounds.IntersectsWith(clip)) continue;
+                    e.Graphics.FillRectangle(paper, heading.Bounds);
                     var text = heading.Bounds; text.Inflate(-5, 0);
                     TextRenderer.DrawText(e.Graphics, heading.Title, font, text, Ui.Muted, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.PreserveGraphicsTranslateTransform);
                 }
             for (var i = 0; i < layout.Cells.Count; i++) {
-                var cell = layout.Cells[i]; var bounds = cell.Bounds; bounds.Inflate(-2, -2);
+                var cell = layout.Cells[i]; if (!cell.Bounds.IntersectsWith(clip)) continue;
+                var bounds = cell.Bounds; bounds.Inflate(-2, -2);
                 if (i == hovered || i == selected) {
                     using (var brush = new SolidBrush(Color.FromArgb(252, 230, 155))) e.Graphics.FillRectangle(brush, bounds);
                     using (var pen = new Pen(Ui.Accent)) e.Graphics.DrawRectangle(pen, bounds);

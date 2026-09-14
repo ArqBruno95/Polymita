@@ -3,7 +3,6 @@ using Grasshopper.Kernel;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -47,7 +46,7 @@ namespace WireShelf
         private readonly ListView list = new ListView { Dock = DockStyle.Fill, View = View.Details, FullRowSelect = true, MultiSelect = false, HideSelection = false, AccessibleName = "Search results and Profiler timings" };
         private readonly Label status = new Label { Dock = DockStyle.Bottom, Height = 100, Padding = new Padding(5) };
         private GH_Document document;
-        private string signature;
+        private int signature;
         internal ComponentFinder(GH_Canvas canvas)
         {
             this.canvas = canvas; Dock = DockStyle.Fill; Padding = new Padding(8);
@@ -70,7 +69,18 @@ namespace WireShelf
         {
             var doc = canvas.Document;
             var rows = FinderEntry.Read(doc, search.Text, slow.Checked);
-            var next = string.Join("|", rows.Select(r => r.Object.InstanceGuid + ":" + r.Name + ":" + r.NickName + ":" + r.HasTiming + ":" + r.Milliseconds.ToString("R", CultureInfo.InvariantCulture)));
+            // Polled twice a second while the window is open; the previous signature
+            // concatenated every row of the definition into one string on each pass.
+            var next = 17;
+            unchecked {
+                foreach (var row in rows) {
+                    next = next*31 + row.Object.InstanceGuid.GetHashCode();
+                    next = next*31 + (row.Name ?? "").GetHashCode();
+                    next = next*31 + (row.NickName ?? "").GetHashCode();
+                    next = next*31 + (row.HasTiming ? 1 : 0);
+                    next = next*31 + row.Milliseconds.GetHashCode();
+                }
+            }
             if (!force && document == doc && signature == next) return;
             document = doc; signature = next;
             profiler.Enabled = doc != null && doc.Profiler != GH_ProfilerMode.Processor;
