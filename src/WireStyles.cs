@@ -18,6 +18,8 @@ namespace WireShelf
         private static bool colorsOwned;
         public static bool Polylines { get; private set; }
         public static int Variant;
+        // Why the patch could not be installed, for the Wires tab to report on demand.
+        public static string LastFailure;
 
         // Horizontal departure and arrival; the middle segment adapts to both grips.
         // Reaching backwards the stub is a short fixed length rather than a share of the
@@ -48,27 +50,41 @@ namespace WireShelf
             var step = Math.Min(distance, length * 0.45F);
             return new PointF(from.X + dx/length*step, from.Y + dy/length*step);
         }
+        // A quadratic through the corner, written as a cubic. It meets both segments
+        // tangentially like a fillet and stays valid however short the adjoining
+        // segments get, which an arc of fixed radius does not.
+        private static void Bend(GraphicsPath path, PointF enter, PointF corner, PointF leave)
+        {
+            path.AddBezier(enter,
+                new PointF(enter.X + (corner.X-enter.X)*2F/3F, enter.Y + (corner.Y-enter.Y)*2F/3F),
+                new PointF(leave.X + (corner.X-leave.X)*2F/3F, leave.Y + (corner.Y-leave.Y)*2F/3F),
+                leave);
+        }
+        // Built without the corner array: with segmented wires on by default this runs
+        // for every wire on the canvas on every repaint.
         public static GraphicsPath Polyline(PointF output, PointF input)
         {
             var path = new GraphicsPath();
-            var corners = Corners(output, input);
-            if (Variant == 0) { path.AddLines(corners); return path; }
-            var cursor = corners[0];
-            for (var i = 1; i < corners.Length-1; i++)
+            if (Variant == 0)
             {
-                var enter = Toward(corners[i], cursor, Fillet);
-                var leave = Toward(corners[i], corners[i+1], Fillet);
-                path.AddLine(cursor, enter);
-                // A quadratic through the corner, written as a cubic. It meets both
-                // segments tangentially like a fillet and stays valid however short
-                // the adjoining segments get, which an arc of fixed radius does not.
-                path.AddBezier(enter,
-                    new PointF(enter.X + (corners[i].X-enter.X)*2F/3F, enter.Y + (corners[i].Y-enter.Y)*2F/3F),
-                    new PointF(leave.X + (corners[i].X-leave.X)*2F/3F, leave.Y + (corners[i].Y-leave.Y)*2F/3F),
-                    leave);
-                cursor = leave;
+                var corner = new PointF(input.X, output.Y);
+                path.AddLine(output, corner); path.AddLine(corner, input);
+                return path;
             }
-            path.AddLine(cursor, corners[corners.Length-1]);
+            var lead = Lead(output, input);
+            var first = new PointF(output.X+lead, output.Y);
+            var second = new PointF(input.X-lead, input.Y);
+            var enterFirst = Toward(first, output, Fillet);
+            var leaveFirst = Toward(first, second, Fillet);
+            // Measured from where the first bend released, so two fillets can never
+            // overrun each other on a short middle segment.
+            var enterSecond = Toward(second, leaveFirst, Fillet);
+            var leaveSecond = Toward(second, input, Fillet);
+            path.AddLine(output, enterFirst);
+            Bend(path, enterFirst, first, leaveFirst);
+            path.AddLine(leaveFirst, enterSecond);
+            Bend(path, enterSecond, second, leaveSecond);
+            path.AddLine(leaveSecond, input);
             return path;
         }
 

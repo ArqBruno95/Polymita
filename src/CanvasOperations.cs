@@ -1,4 +1,3 @@
-using Grasshopper.GUI.Canvas;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Parameters;
 using Grasshopper.Kernel.Special;
@@ -136,84 +135,6 @@ namespace WireShelf
             foreach (var job in work) { job.Item3.ExpireSolution(false); if (job.Item2 != null) job.Item2.ExpireSolution(false); }
             doc.NewSolution(false); return added;
         }
-        // Nearest wire to a canvas point, walking the painted path so it finds the wire
-        // wherever the current style actually draws it.
-        public static bool FindWire(GH_Document doc, PointF point, float tolerance,
-            out IGH_Param source, out IGH_Param target)
-        {
-            source = null; target = null;
-            if (doc == null) return false;
-            var best = tolerance;
-            foreach (var input in doc.Objects.SelectMany(o => Recipes.Ports(o, false)).ToArray())
-            {
-                if (input.WireDisplay == GH_ParamWireDisplay.hidden || input.Attributes == null || !input.Attributes.HasInputGrip) continue;
-                var to = input.Attributes.InputGrip;
-                foreach (var upstream in input.Sources.ToArray())
-                {
-                    if (upstream.Attributes == null || !upstream.Attributes.HasOutputGrip) continue;
-                    var from = upstream.Attributes.OutputGrip;
-                    using (var path = GH_Painter.ConnectionPath(from, to, GH_WireDirection.right, GH_WireDirection.left))
-                    {
-                        if (path == null || path.PointCount == 0) continue;
-                        path.Flatten(null, 0.5F);
-                        if (path.PointCount < 2) continue;
-                        var pts = path.PathPoints;
-                        for (var i = 1; i < pts.Length; i++)
-                        {
-                            var near = WireStyles.Closest(pts[i-1], pts[i], point);
-                            var gap = ShelfRuntime.Distance(near, point);
-                            if (gap >= best) continue;
-                            best = gap; source = upstream; target = input;
-                        }
-                    }
-                }
-            }
-            return source != null;
-        }
-        // Double-clicking a wire drops a relay into it. The relay takes over the wire
-        // rather than branching off it, so the route stays a single chain.
-        public static GH_Relay InsertRelay(GH_Document doc, IGH_Param source, IGH_Param target, PointF point)
-        {
-            var relay = new GH_Relay();
-            relay.CreateAttributes();
-            Place(relay, point);
-            var record = new GH_UndoRecord("Polymita · Insert relay");
-            record.AddAction(new GH_WireAction(target));
-            var added = false;
-            try
-            {
-                doc.AddObject(relay, false); added = true;
-                record.AddAction(new GH_AddObjectAction(relay));
-                relay.AddSource(source);
-                target.RemoveSource(source);
-                target.AddSource(relay);
-                doc.UndoUtil.RecordEvent(record);
-            }
-            catch { if (added) doc.RemoveObject(relay, false); throw; }
-            relay.ResolveDisplayName();
-            relay.ExpireSolution(false); target.ExpireSolution(false);
-            doc.NewSolution(false);
-            return relay;
-        }
-        // Double-clicking a relay takes it out of the wire and reconnects both ends.
-        public static void DissolveRelay(GH_Document doc, GH_Relay relay)
-        {
-            if (doc == null || relay == null) return;
-            var sources = relay.Sources.ToArray();
-            var recipients = relay.Recipients.ToArray();
-            var record = new GH_UndoRecord("Polymita · Dissolve relay");
-            foreach (var recipient in recipients) record.AddAction(new GH_WireAction(recipient));
-            record.AddAction(new GH_RemoveObjectAction(relay));
-            foreach (var recipient in recipients)
-            {
-                recipient.RemoveSource(relay);
-                foreach (var source in sources) if (!recipient.Sources.Contains(source)) recipient.AddSource(source);
-            }
-            doc.RemoveObject(relay, false);
-            doc.UndoUtil.RecordEvent(record);
-            foreach (var recipient in recipients) recipient.ExpireSolution(false);
-            doc.NewSolution(false);
-        }
         // Alt+G. Every object that overlaps a selected group joins it.
         public static int Absorb(GH_Document doc)
         {
@@ -259,18 +180,6 @@ namespace WireShelf
                 foreach (var id in group.ObjectIDs) if (ids.Add(id)) pending.Enqueue(id);
             }
             return ids;
-        }
-        public static float FreeOffset(RectangleF source, IEnumerable<RectangleF> obstacles, float gap)
-        {
-            var items = obstacles.ToArray(); var dx = source.Width + gap;
-            for (int i=0; i<=items.Length; i++)
-            {
-                var moved = source; moved.Offset(dx,0); moved.Inflate(gap/2,gap/2);
-                var hits = items.Where(r=>r.IntersectsWith(moved)).ToArray();
-                if (hits.Length == 0) return dx;
-                dx = Math.Max(dx + gap, hits.Max(r=>r.Right) + gap - source.Left);
-            }
-            return Math.Max(dx, items.Max(r=>r.Right) + gap - source.Left);
         }
         public static List<IGH_DocumentObject> Duplicate(GH_Document doc) { return Copy(doc, true); }
         // Alt-dragging leaves a copy behind, so the copy has to land exactly on top.

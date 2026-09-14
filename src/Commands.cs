@@ -42,7 +42,6 @@ namespace WireShelf
             return entry == null ? Keys.None : entry.Fallback;
         }
         public static void Bind(string id, Keys combo) { bound[id] = combo; }
-        public static void Reset() { bound.Clear(); }
         // A binding that no longer names a command is dropped rather than rejected, so
         // a settings file written by a later build cannot stop the plug-in loading.
         public static void Load(string[] stored)

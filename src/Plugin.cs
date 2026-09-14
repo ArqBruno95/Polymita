@@ -102,14 +102,19 @@ namespace WireShelf
         {
             if (initialized) return; initialized = true; Enabled = true;
             try { toolboxSettings = ToolboxSettings.Load(ToolboxPath); } catch (Exception ex) { toolboxSettings = new ToolboxSettings(); Ui.Error(ex); }
-            WireStyles.Variant=toolboxSettings.WireVariant;
-            CanvasGestures.CutEnabled=toolboxSettings.CutWires; CanvasGestures.SnapEnabled=toolboxSettings.SnapAlign;
-            // Component captions became a default rather than an opt-in. Settings files
-            // written before that carry an explicit false, so turn them on once.
             Commands.Load(toolboxSettings.Shortcuts);
+            // Captions and segmented wires became defaults rather than opt-ins. Settings
+            // files written before that carry an explicit false, so turn them on once and
+            // leave them under the user's control from then on.
             if (toolboxSettings.LabelsRevision < 1)
             { toolboxSettings.ComponentNames = true; toolboxSettings.LabelsRevision = 1; SaveToolboxSettings(); }
-            Ui.Safe(()=>WireStyles.SetPolylines(toolboxSettings.Polylines));
+            if (toolboxSettings.WiresRevision < 1)
+            { toolboxSettings.Polylines = true; toolboxSettings.WireVariant = 1; toolboxSettings.WiresRevision = 1; SaveToolboxSettings(); }
+            WireStyles.Variant=toolboxSettings.WireVariant;
+            CanvasGestures.CutEnabled=toolboxSettings.CutWires; CanvasGestures.SnapEnabled=toolboxSettings.SnapAlign;
+            // Reported by the Wires tab when the option is next touched rather than as a
+            // dialog on every start, which is what turning this on by default would mean.
+            try { WireStyles.SetPolylines(toolboxSettings.Polylines); } catch (Exception ex) { WireStyles.LastFailure = ex.Message; }
             WireStyles.SetHighlight(toolboxSettings.Highlight,Color.FromArgb(toolboxSettings.SelectedArgb));
             shiftFilter = new ShiftFilter();
             Instances.CanvasCreated += Attach;
@@ -192,7 +197,6 @@ namespace WireShelf
                     "Drag a wire from an input or output and release over empty canvas. You can also click a port and then empty canvas.\n\n" +
                     "Double Shift: insert without a wire at the cursor. Click an icon to insert; right-click to choose a port.\n\n" +
                     "Ctrl + left drag cuts wires. Shift while dragging constrains the move; Alt leaves a copy behind.\n\n" +
-                    "Double-click a wire to drop a relay into it, or a relay to dissolve it.\n\n" +
                     "Every shortcut can be rebound from Customise shortcuts.\n\n" +
                     "Inspired by QuickConnection, WiresRenderer and Sunglasses.\nGPL-3.0-or-later · License and source included in the package.", "Polymita");
             });

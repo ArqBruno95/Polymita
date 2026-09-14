@@ -9,17 +9,18 @@ namespace WireShelf
     [DataContract]
     public sealed class ToolboxSettings
     {
-        [DataMember] public bool Polylines;
+        [DataMember] public bool Polylines = true;
         [DataMember] public bool Highlight;
         [DataMember] public int SelectedArgb = Color.FromArgb(255, 222, 76, 36).ToArgb();
         [DataMember] public int PanelWidth = 420;
         [DataMember] public string View = "Perspective";
         [DataMember] public Guid DisplayMode;
-        [DataMember] public int WireVariant;
+        [DataMember] public int WireVariant = 1;
         [DataMember] public float WireAngle = 45;
         [DataMember] public bool ComponentNames = true;
         [DataMember] public int LabelsRevision;
         [DataMember] public string[] Shortcuts;
+        [DataMember] public int WiresRevision;
         [DataMember] public bool GroupNames;
         [DataMember] public bool Nicknames;
         [DataMember] public float ComponentTextSize = 12;
@@ -31,7 +32,7 @@ namespace WireShelf
         // initializers, so settings files written before these members existed
         // would silently deserialize both gestures as disabled.
         [OnDeserializing] private void Defaults(StreamingContext context)
-        { CutWires = true; SnapAlign = true; ComponentNames = true; }
+        { CutWires = true; SnapAlign = true; ComponentNames = true; Polylines = true; WireVariant = 1; }
         public static ToolboxSettings Load(string path)
         {
             if (!File.Exists(path)) return new ToolboxSettings();

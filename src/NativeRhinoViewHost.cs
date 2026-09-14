@@ -15,7 +15,6 @@ namespace WireShelf {
   internal event Action Ready;
   internal bool HasView { get { return view!=null && frame!=IntPtr.Zero && IsWindow(frame); } }
   internal RhinoViewport Viewport { get { return HasView?view.ActiveViewport:null; } }
-  internal RhinoView NativeView { get { return view; } }
   internal NativeRhinoViewHost() {
    BackColor=Color.White; AccessibleName="Interactive Rhino viewport";
    timer.Tick+=delegate { Sync(); };

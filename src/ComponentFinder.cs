@@ -64,7 +64,6 @@ namespace WireShelf
                 { list.Focus(); list.Items[0].Selected = true; e.SuppressKeyPress = true; }
             };
         }
-        internal void FocusSearch() { search.Focus(); search.SelectAll(); }
         internal void RefreshResults(bool force)
         {
             var doc = canvas.Document;

@@ -41,7 +41,11 @@ internal sealed class Toolbox : IDisposable {
  static NumericUpDown Number(decimal value,decimal min,decimal max) { return new NumericUpDown { Minimum=min,Maximum=max,Value=value,Width=100 }; }
  Control WireOptions() {
   var panel=Options();
-  var enabled=new CheckBox { Text="Draw segmented wires",AutoSize=true,Checked=settings.Polylines };
+  // A failure while loading at start-up is reported here rather than as a dialog on
+  // every start, now that segmented wires are on by default.
+  if(WireStyles.LastFailure!=null && !WireStyles.Polylines)
+   panel.Controls.Add(new Label { Text="Segmented wires are unavailable: "+WireStyles.LastFailure,AutoSize=true,ForeColor=Ui.Accent,MaximumSize=new Size(390,0),Margin=new Padding(0,0,0,10) });
+  var enabled=new CheckBox { Text="Draw segmented wires",AutoSize=true,Checked=settings.Polylines && WireStyles.Polylines };
   var variant=new ComboBox { DropDownStyle=ComboBoxStyle.DropDownList,Width=370,AccessibleName="Wire style" };
   variant.Items.AddRange(new object[] { "Two orthogonal segments","Adaptive three-segment wire" }); variant.SelectedIndex=settings.WireVariant;
   var highlight=new CheckBox { Text="Highlight selected connections",AutoSize=true,Checked=settings.Highlight };

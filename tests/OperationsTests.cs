@@ -83,28 +83,6 @@ public static class OperationsTests {
    }
    using(var doc=new GH_Document()) {
     canvas.Document=doc;
-    var feed=Add(doc,new Param_Number(),100,100);
-    var sink=Add(doc,new Param_Number(),600,100);
-    sink.AddSource(feed);
-    foreach(var o in doc.Objects) { o.Attributes.ExpireLayout(); o.Attributes.PerformLayout(); }
-    var midpoint=new PointF((feed.Attributes.OutputGrip.X+sink.Attributes.InputGrip.X)/2,
-        (feed.Attributes.OutputGrip.Y+sink.Attributes.InputGrip.Y)/2);
-    IGH_Param from,to;
-    Check(CanvasOperations.FindWire(doc,midpoint,6F,out from,out to) && from==feed && to==sink,"A point on a wire finds that wire");
-    Check(!CanvasOperations.FindWire(doc,new PointF(350,600),6F,out from,out to),"A point away from every wire finds none");
-    var relay=CanvasOperations.InsertRelay(doc,feed,sink,midpoint);
-    Check(relay.Sources.Contains(feed) && sink.Sources.Contains(relay) && !sink.Sources.Contains(feed),"Relay takes over the wire instead of branching");
-    doc.Undo();
-    Check(sink.Sources.Contains(feed) && doc.FindObject(relay.InstanceGuid,false)==null,"Relay insertion has one-step Undo");
-    doc.Redo();
-    relay=(GH_Relay)doc.FindObject(relay.InstanceGuid,false);
-    CanvasOperations.DissolveRelay(doc,relay);
-    Check(sink.Sources.Contains(feed) && doc.FindObject(relay.InstanceGuid,false)==null,"Dissolving a relay reconnects both ends");
-    doc.Undo();
-    Check(doc.FindObject(relay.InstanceGuid,false)!=null && !sink.Sources.Contains(feed),"Relay dissolve has one-step Undo");
-   }
-   using(var doc=new GH_Document()) {
-    canvas.Document=doc;
     var inside=Add(doc,new Param_Number(),120,120);
     var outside=Add(doc,new Param_Number(),900,900);
     var group=Add(doc,new GH_Group(),0,0); group.AddObject(inside.InstanceGuid);

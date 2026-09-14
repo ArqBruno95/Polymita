@@ -94,15 +94,9 @@ namespace WireShelf
     internal sealed class CanvasGestures : IDisposable
     {
         readonly GH_Canvas canvas;
-        // Windows can deliver more than one double-click for a fast run of clicks, and a
-        // relay lands under the cursor, so the next one would dissolve what the last one
-        // made. One gesture per place and per moment.
-        readonly System.Diagnostics.Stopwatch clock = System.Diagnostics.Stopwatch.StartNew();
-        long lastGesture = -10000;
-        PointF lastPoint;
         internal static bool CutEnabled = true, SnapEnabled = true;
         internal CanvasGestures(GH_Canvas canvas)
-        { this.canvas=canvas; canvas.MouseDown += Down; canvas.MouseDoubleClick += DoubleClick; }
+        { this.canvas=canvas; canvas.MouseDown += Down; }
         void Down(object sender, MouseEventArgs e)
         {
             if (e.Button != MouseButtons.Left || canvas.Document == null) return;
@@ -127,24 +121,6 @@ namespace WireShelf
             canvas.ActiveInteraction = new CutInteraction(canvas,e);
             return true;
         }
-        internal void DoubleClick(object sender, MouseEventArgs e)
-        {
-            if (e.Button != MouseButtons.Left || canvas.Document == null || Control.ModifierKeys != Keys.None) return;
-            var doc = canvas.Document;
-            var where = new GH_CanvasMouseEvent(canvas.Viewport,e).CanvasLocation;
-            var zoom = Math.Max(0.05F, canvas.Viewport.Zoom);
-            var now = clock.ElapsedMilliseconds;
-            if (now - lastGesture < 600 && ShelfRuntime.Distance(where, lastPoint) < 12F/zoom) return;
-            lastGesture = now; lastPoint = where;
-            var hit = doc.FindAttribute(where, true);
-            var relay = hit == null ? null : hit.DocObject as GH_Relay;
-            if (relay != null) { Ui.Safe(delegate { CanvasOperations.DissolveRelay(doc, relay); canvas.Invalidate(); }); return; }
-            // A wire can cross a group, so a group under the cursor does not rule one out.
-            if (hit != null && !(hit.DocObject is GH_Group)) return;
-            IGH_Param source, target;
-            if (!CanvasOperations.FindWire(doc, where, 10F/zoom, out source, out target)) return;
-            Ui.Safe(delegate { CanvasOperations.InsertRelay(doc, source, target, where); canvas.Invalidate(); });
-        }
         void StartAlign(MouseEventArgs e)
         {
             // Ctrl belongs to the cutter and to native multiselection. Shift constrains
@@ -168,7 +144,7 @@ namespace WireShelf
         public void Dispose()
         {
             if (canvas.ActiveInteraction is CutInteraction || canvas.ActiveInteraction is AlignInteraction) canvas.ActiveInteraction=null;
-            canvas.MouseDown -= Down; canvas.MouseDoubleClick -= DoubleClick;
+            canvas.MouseDown -= Down;
         }
     }
 

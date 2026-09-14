@@ -72,12 +72,6 @@ namespace WireShelf {
    settings.DisplayMode=mode.Id;
    if(ViewControl.HasView) { ViewControl.Viewport.DisplayMode=mode;ViewControl.RedrawView(); }
   }
-  internal void CopyRhinoView() {
-   var doc=RhinoDoc.ActiveDoc;
-   if(!ViewControl.HasView || doc==null || doc.Views.ActiveView==null)return;
-   using(var info=new Rhino.DocObjects.ViewportInfo(doc.Views.ActiveView.ActiveViewport))ViewControl.Viewport.SetViewProjection(info,true);
-   ViewControl.RedrawView();
-  }
   internal void Fit() {
    if(!ViewControl.HasView)return;
    var bounds=BoundingBox.Empty;
