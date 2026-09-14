@@ -19,6 +19,7 @@ namespace WireShelf
         [DataMember] public float WireAngle = 45;
         [DataMember] public bool ComponentNames = true;
         [DataMember] public int LabelsRevision;
+        [DataMember] public string[] Shortcuts;
         [DataMember] public bool GroupNames;
         [DataMember] public bool Nicknames;
         [DataMember] public float ComponentTextSize = 12;

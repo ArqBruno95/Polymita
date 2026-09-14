@@ -34,12 +34,15 @@ namespace WireShelf
         }
         public static PointF Snap(RectangleF moving, IEnumerable<RectangleF> targets, float tolerance,
             out float? guideX, out float? guideY)
-        { int kx, ky; return Snap(moving, targets, null, tolerance, out guideX, out guideY, out kx, out ky); }
+        { int kx, ky; return Snap(moving, targets, null, tolerance, moving.Top + moving.Height/2, out guideX, out guideY, out kx, out ky); }
         // Runs for every target on every mouse move of a drag. The candidate edges are
         // hoisted out of the loop: building the two three-element arrays per target was
         // the whole allocation cost of aligning inside a large definition.
+        // anchorY is the height the ports are measured against. A capsule with several
+        // outputs has none of them on its centre line, so the drag carries the grip it
+        // was grabbed nearest instead, and that is what lines up with the far port.
         public static PointF Snap(RectangleF moving, IEnumerable<RectangleF> targets, IEnumerable<PointF> ports,
-            float tolerance, out float? guideX, out float? guideY, out int kindX, out int kindY)
+            float tolerance, float anchorY, out float? guideX, out float? guideY, out int kindX, out int kindY)
         {
             guideX = guideY = null; kindX = kindY = None;
             float dx = 0, dy = 0, bestX = 1F, bestY = 1F;
@@ -66,7 +69,7 @@ namespace WireShelf
                     Consider(x1, port.X, Port, tolerance, ref bestX, ref dx, ref guideX, ref kindX);
                     // Lining the moving centre up with the grip it wires into is the one
                     // the drag is usually reaching for, so it grabs from further away.
-                    Consider(y1, port.Y, Port, tolerance*PortReach, ref bestY, ref dy, ref guideY, ref kindY);
+                    Consider(anchorY, port.Y, Port, tolerance*PortReach, ref bestY, ref dy, ref guideY, ref kindY);
                 }
             return new PointF(dx, dy);
         }
@@ -277,6 +280,7 @@ namespace WireShelf
         readonly RectangleF bounds;
         readonly RectangleF[] targets;
         readonly PointF[] ports;
+        float anchorY;
         readonly GH_UndoRecord undo;
         float? guideX, guideY;
         int kindX, kindY;
@@ -294,6 +298,12 @@ namespace WireShelf
             if (!Ui.Try(delegate { CanvasOperations.DuplicateInPlace(doc); })) return;
             doc.DeselectAll();
             foreach (var obj in objects) obj.Attributes.Selected = true;
+        }
+        static void Nearest(PointF grip, PointF cursor, ref float best, ref float anchorY)
+        {
+            var gap=ShelfRuntime.Distance(grip,cursor);
+            if(gap>=best) return;
+            best=gap; anchorY=grip.Y;
         }
         static void Grip(List<PointF> into, IGH_Param param, HashSet<Guid> moving, bool output)
         {
@@ -332,6 +342,18 @@ namespace WireShelf
                         foreach(var recipient in port.Recipients) Grip(grips,recipient,ids,false);
                     }
             ports=grips.ToArray();
+            // The moving grip closest to where the drag began. With one output that is
+            // effectively the centre line; with several it is the one being reached for.
+            anchorY=bounds.Top+bounds.Height/2;
+            var closest=float.MaxValue;
+            foreach(var obj in objects)
+                foreach(var side in new[]{false,true})
+                    foreach(var port in Recipes.Ports(obj,side))
+                    {
+                        if(port.Attributes==null) continue;
+                        if(side && port.Attributes.HasOutputGrip) Nearest(port.Attributes.OutputGrip,e.CanvasLocation,ref closest,ref anchorY);
+                        if(!side && port.Attributes.HasInputGrip) Nearest(port.Attributes.InputGrip,e.CanvasLocation,ref closest,ref anchorY);
+                    }
             undo=doc.UndoUtil.CreatePivotEvent("Polymita: align selection",objects);
             canvas.CanvasPostPaintObjects+=Paint; canvas.Capture=true;
         }
@@ -369,7 +391,7 @@ namespace WireShelf
             {
                 var box=bounds; box.Offset(delta);
                 var snap=AlignmentGeometry.Snap(box,targets,ports,8F/Math.Max(0.05F,sender.Viewport.Zoom),
-                    out guideX,out guideY,out kindX,out kindY);
+                    anchorY+delta.Y,out guideX,out guideY,out kindX,out kindY);
                 delta.X+=snap.X; delta.Y+=snap.Y;
             }
             else { guideX=guideY=null; }

@@ -4,6 +4,13 @@ A toolbox for clear, fast work in **Grasshopper for Rhino 8 on Windows**.
 
 Polymita is the scientific name used internationally for Cuba's painted snails. The identity uses a geometric spiral shell, shell yellow, coral, cream and dark ink. English common name: **Cuban painted snail**. [Natural-history reference](https://www.amnh.org/explore/news-blogs/cuba-painted-snails).
 
+## Changes in 0.8.1
+
+- The **Polymita menu** lists the five tools that have a toolbar icon first, in toolbar order, then the switches, then the commands, with no separators. Rhino viewport, Wire style and color and Component and group labels now have shortcuts of their own.
+- **Customise shortcuts…** rebinds every command in the plug-in. Select a command, press the keys; Backspace clears one, and taking a combination frees whoever held it. Bindings are stored in `toolbox.json`.
+- Snapping a capsule with several outputs measures against the **grip the drag was started nearest** rather than the centre line, which none of several outputs sits on.
+- Releasing a dragged wire near **any** port, input or output, completes the connection instead of opening the palette. The search is measured in screen pixels, so it does not shrink as the canvas zooms out.
+
 ## Changes in 0.8.0
 
 - **Adaptive wires are filleted.** The two corners are rounded. When the input sits left of the output the stub is a short fixed length, which turns the wire into a straight run with a tight rounded hook at each end.

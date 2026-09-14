@@ -32,12 +32,14 @@ namespace WireShelf
             Application.ApplicationExit += OnExit;
         }
         internal void Cancel() { tap.Reset(); }
-        private bool InCanvas(GH_Canvas canvas, bool allowAlt = false)
+        // permitted names the modifiers the caller's own gesture holds down; anything
+        // else being held means the keystroke belongs to something other than us.
+        private bool InCanvas(GH_Canvas canvas, Keys permitted = Keys.None)
         {
             var host = Instances.DocumentEditor;
             if (canvas == null || canvas.IsDisposed || canvas.Document == null || host == null || GetForegroundWindow() != host.Handle ||
                 !canvas.ClientRectangle.Contains(canvas.PointToClient(Cursor.Position)) || canvas.ActiveInteraction != null || Control.MouseButtons != MouseButtons.None ||
-                (Control.ModifierKeys & (allowAlt ? Keys.Control | Keys.Shift : Keys.Control | Keys.Alt)) != Keys.None) return false;
+                (Control.ModifierKeys & (Keys.Control|Keys.Shift|Keys.Alt) & ~permitted) != Keys.None) return false;
             // Inline editors must keep their keyboard. Grasshopper itself often
             // leaves focus in the toolbar's zoom field while the canvas is active.
             var focused = Control.FromChildHandle(GetFocus());
@@ -52,16 +54,16 @@ namespace WireShelf
                 try {
                     var canvas = Instances.ActiveCanvas;
                     var operationKey=(Keys)keyValue.ToInt32(); var operationFlags=state.ToInt64();
-                    var operation=Operation(operationKey);
-                    if(operation!=null && (Control.ModifierKeys & Keys.Alt)!=0 && InCanvas(canvas,true)) {
+                    var operation=Commands.Match(operationKey|Control.ModifierKeys);
+                    if(operation!=null && (Control.ModifierKeys & Keys.Alt)!=0 && InCanvas(canvas,Control.ModifierKeys)) {
                         tap.Reset();
                         if((operationFlags & ((1L<<31)|(1L<<30)))==0) {
                             var current=canvas.Document;
-                            canvas.BeginInvoke(new Action(delegate { if(!canvas.IsDisposed && canvas.Document==current) ShelfRuntime.RunOperation(operation); }));
+                            canvas.BeginInvoke(new Action(delegate { if(!canvas.IsDisposed && canvas.Document==current) ShelfRuntime.RunCommand(operation); }));
                         }
                         return new IntPtr(1);
                     }
-                    if (!InCanvas(canvas)) tap.Reset();
+                    if (!InCanvas(canvas,Keys.Shift)) tap.Reset();
                     else {
                         if (canvas != context || canvas.Document != document) { tap.Reset(); context = canvas; document = canvas.Document; }
                         var key = (Keys)keyValue.ToInt32(); var flags = state.ToInt64();
@@ -72,25 +74,13 @@ namespace WireShelf
                         else if (tap.Release(clock.ElapsedMilliseconds, SystemInformation.DoubleClickTime)) {
                             var currentDocument = canvas.Document;
                             canvas.BeginInvoke(new Action(delegate {
-                                if (InCanvas(canvas) && canvas.Document == currentDocument) Ui.Safe(() => ShelfRuntime.OpenAtCursor(canvas));
+                                if (InCanvas(canvas,Keys.Shift) && canvas.Document == currentDocument) Ui.Safe(() => ShelfRuntime.OpenAtCursor(canvas));
                             }));
                         }
                     }
                 } catch { tap.Reset(); } // Never propagate an exception through a native hook.
             }
             return CallNextHookEx(hook, code, keyValue, state);
-        }
-        // Swallowed here so Grasshopper never sees the Alt accelerator.
-        private static string Operation(Keys key)
-        {
-            switch(key) {
-                case Keys.W: return "connect";
-                case Keys.Q: return "duplicate";
-                case Keys.A: return "before";
-                case Keys.D: return "after";
-                case Keys.G: return "absorb";
-                default: return null;
-            }
         }
         private void OnExit(object sender, EventArgs e) { Dispose(); }
         public void Dispose()

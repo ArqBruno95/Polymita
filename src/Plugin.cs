@@ -47,6 +47,7 @@ namespace WireShelf
         private static Editor editor;
         private static Palette palette;
         private static ToolStripMenuItem menu;
+        private static ShortcutEditor shortcuts;
         private static ShiftFilter shiftFilter;
         private static Toolbox toolbox;
         private static ToolboxSettings toolboxSettings;
@@ -105,6 +106,7 @@ namespace WireShelf
             CanvasGestures.CutEnabled=toolboxSettings.CutWires; CanvasGestures.SnapEnabled=toolboxSettings.SnapAlign;
             // Component captions became a default rather than an opt-in. Settings files
             // written before that carry an explicit false, so turn them on once.
+            Commands.Load(toolboxSettings.Shortcuts);
             if (toolboxSettings.LabelsRevision < 1)
             { toolboxSettings.ComponentNames = true; toolboxSettings.LabelsRevision = 1; SaveToolboxSettings(); }
             Ui.Safe(()=>WireStyles.SetPolylines(toolboxSettings.Polylines));
@@ -158,6 +160,14 @@ namespace WireShelf
             if (strip == null) return false;
             if (menu != null && !menu.IsDisposed) return true;
             menu = new ToolStripMenuItem("Polymita", Icon);
+            items.Clear();
+            // Tools that have a toolbar icon come first, in toolbar order, then the
+            // switches, then everything else. No separators: one flat list.
+            Tool("viewport", Brand.View, delegate { OpenToolbox(0); });
+            Tool("library", Brand.Library, delegate { Edit(); });
+            Tool("wires", Brand.Wires, delegate { OpenToolbox(2); });
+            Tool("labels", Brand.Labels, delegate { OpenToolbox(3); });
+            Tool("finder", Brand.Find, delegate { OpenToolbox(1); });
             var active = new ToolStripMenuItem("Enable on wire release") { Checked = Enabled, CheckOnClick = true };
             active.CheckedChanged += delegate { Enabled = active.Checked; };
             menu.DropDownItems.Add(active);
@@ -165,39 +175,77 @@ namespace WireShelf
             cut.CheckedChanged += delegate {
                 CanvasGestures.CutEnabled=cut.Checked; toolboxSettings.CutWires=cut.Checked; SaveToolboxSettings();
             }; menu.DropDownItems.Add(cut);
-            var snap = new ToolStripMenuItem("Snap to edges and centers · hold Alt to suspend") { Checked=CanvasGestures.SnapEnabled, CheckOnClick=true };
+            var snap = new ToolStripMenuItem("Snap to edges and centers") { Checked=CanvasGestures.SnapEnabled, CheckOnClick=true };
             snap.CheckedChanged += delegate {
                 CanvasGestures.SnapEnabled=snap.Checked; toolboxSettings.SnapAlign=snap.Checked; SaveToolboxSettings();
             }; menu.DropDownItems.Add(snap);
-            menu.DropDownItems.Add(new ToolStripMenuItem("Edit library…", Brand.Library, delegate { Edit(); })
-                { ShortcutKeys = Keys.Control | Keys.Shift | Keys.B });
-            menu.DropDownItems.Add(new ToolStripMenuItem("Save selection as recipe…", null, delegate { Ui.Safe(() => Edit(CaptureSelection())); })
-                { ShortcutKeys = Keys.Control | Keys.Shift | Keys.R });
-            menu.DropDownItems.Add(new ToolStripMenuItem("Open favorites here", null, delegate { Ui.Safe(OpenAtCenter); })
-                { ShortcutKeys = Keys.Control | Keys.Space });
-            menu.DropDownItems.Add(new ToolStripSeparator());
-            menu.DropDownItems.Add("Rhino viewport", Brand.View, delegate { OpenToolbox(0); });
-            menu.DropDownItems.Add(new ToolStripMenuItem("Find in definition / Profiler", Brand.Find, delegate { OpenToolbox(1); }) { ShortcutKeys = Keys.Control | Keys.Shift | Keys.F });
-            menu.DropDownItems.Add("Wire style and color", Brand.Wires, delegate { OpenToolbox(2); });
-            menu.DropDownItems.Add("Component and group labels", null, delegate { OpenToolbox(3); });
-            menu.DropDownItems.Add(new ToolStripMenuItem("Connect selection",null,delegate { RunOperation("connect"); }) { ShortcutKeyDisplayString="Alt+W" });
-            menu.DropDownItems.Add(new ToolStripMenuItem("Duplicate selection",null,delegate { RunOperation("duplicate"); }) { ShortcutKeyDisplayString="Alt+Q" });
-            menu.DropDownItems.Add(new ToolStripMenuItem("Data container before selection",null,delegate { RunOperation("before"); }) { ShortcutKeyDisplayString="Alt+A" });
-            menu.DropDownItems.Add(new ToolStripMenuItem("Data container after selection",null,delegate { RunOperation("after"); }) { ShortcutKeyDisplayString="Alt+D" });
-            menu.DropDownItems.Add(new ToolStripMenuItem("Add overlapping objects to group",null,delegate { RunOperation("absorb"); }) { ShortcutKeyDisplayString="Alt+G" });
-            menu.DropDownItems.Add(new ToolStripSeparator());
+            Tool("capture", null, delegate { Ui.Safe(() => Edit(CaptureSelection())); });
+            Tool("palette", null, delegate { Ui.Safe(OpenAtCenter); });
+            Tool("connect", null, delegate { RunOperation("connect"); });
+            Tool("duplicate", null, delegate { RunOperation("duplicate"); });
+            Tool("before", null, delegate { RunOperation("before"); });
+            Tool("after", null, delegate { RunOperation("after"); });
+            Tool("absorb", null, delegate { RunOperation("absorb"); });
+            menu.DropDownItems.Add("Customise shortcuts…", null, delegate { EditShortcuts(); });
             menu.DropDownItems.Add("About / Help", null, delegate {
-                MessageBox.Show(host, "Polymita 0.7.0 · Rhino 8 / Windows\n\n" +
+                MessageBox.Show(host, "Polymita 0.8.0 · Rhino 8 / Windows\n\n" +
                     "Drag a wire from an input or output and release over empty canvas. You can also click a port and then empty canvas.\n\n" +
                     "Double Shift: insert without a wire at the cursor. Click an icon to insert; right-click to choose a port.\n\n" +
-                    "Ctrl+Space: favorites · Ctrl+Shift+B: library · Ctrl+Shift+R: capture selection.\n\n" +
-                    "Configure a component, select it and save it as a recipe. Its settings and persistent data are preserved.\n\n" +
-                    "Disable QuickConnection if both plugins intercept the same wires.\n\n" +
-                    "Alt+W: connect selection · Alt+Q: duplicate selection.\nCtrl+Shift+F: find / Profiler.\n\n" +
-                    "Four buttons beside Sketch: viewport, library, wires and labels.\n\n" +
+                    "Ctrl + left drag cuts wires. Shift while dragging constrains the move; Alt leaves a copy behind.\n\n" +
+                    "Double-click a wire to drop a relay into it, or a relay to dissolve it.\n\n" +
+                    "Every shortcut can be rebound from Customise shortcuts.\n\n" +
                     "Inspired by QuickConnection, WiresRenderer and Sunglasses.\nGPL-3.0-or-later · License and source included in the package.", "Polymita");
             });
             strip.Items.Add(menu); InstallToolbar(host); return true;
+        }
+        private static readonly Dictionary<string,ToolStripMenuItem> items = new Dictionary<string,ToolStripMenuItem>();
+        // A menu entry bound to a command, so rebinding updates it in place.
+        private static void Tool(string id, Image icon, EventHandler click)
+        {
+            var entry = new ToolStripMenuItem(Commands.All.First(e => e.Id == id).Title, icon, click);
+            items[id] = entry; menu.DropDownItems.Add(entry); ApplyKey(id, entry);
+        }
+        // Alt combinations are shown but not claimed: Grasshopper's canvas never hands
+        // WinForms those keystrokes, so the Rhino-side hook is what actually runs them.
+        private static void ApplyKey(string id, ToolStripMenuItem entry)
+        {
+            var combo = Commands.Key(id);
+            entry.ShortcutKeys = Keys.None; entry.ShortcutKeyDisplayString = null;
+            if (combo == Keys.None) return;
+            if ((combo & Keys.Alt) != Keys.None) { entry.ShortcutKeyDisplayString = Commands.Describe(combo); return; }
+            try { entry.ShortcutKeys = combo; }
+            catch (ArgumentException) { entry.ShortcutKeyDisplayString = Commands.Describe(combo); }
+        }
+        internal static void ShortcutsChanged()
+        {
+            Ui.Safe(delegate {
+                foreach (var pair in items) if (!pair.Value.IsDisposed) ApplyKey(pair.Key, pair.Value);
+                if (toolboxSettings != null) { toolboxSettings.Shortcuts = Commands.Save(); SaveToolboxSettings(); }
+            });
+        }
+        internal static void EditShortcuts()
+        {
+            Ui.Safe(delegate {
+                if (shortcuts != null && !shortcuts.IsDisposed) { shortcuts.Activate(); return; }
+                shortcuts = new ShortcutEditor();
+                shortcuts.FormClosed += delegate { shortcuts = null; };
+                shortcuts.Show(Instances.DocumentEditor);
+            });
+        }
+        // Runs any command in the table, whichever key or menu entry reached it.
+        internal static void RunCommand(string id)
+        {
+            switch (id)
+            {
+                case "viewport": OpenToolbox(0); break;
+                case "library": Edit(); break;
+                case "wires": OpenToolbox(2); break;
+                case "labels": OpenToolbox(3); break;
+                case "finder": OpenToolbox(1); break;
+                case "capture": Ui.Safe(() => Edit(CaptureSelection())); break;
+                case "palette": Ui.Safe(OpenAtCenter); break;
+                default: RunOperation(id); break;
+            }
         }
         private static IEnumerable<Control> Descendants(Control root)
         { foreach(Control child in root.Controls) { yield return child; foreach(var nested in Descendants(child)) yield return nested; } }
@@ -246,9 +294,11 @@ namespace WireShelf
         }
         private static void KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Control && e.Shift && e.KeyCode == Keys.B) { Edit(); e.Handled = true; e.SuppressKeyPress = true; }
-            else if (e.Control && e.Shift && e.KeyCode == Keys.R) { Ui.Safe(() => Edit(CaptureSelection())); e.Handled = true; e.SuppressKeyPress = true; }
-            else if (e.Control && e.KeyCode == Keys.Space) { Ui.Safe(OpenAtCenter); e.Handled = true; e.SuppressKeyPress = true; }
+            // Alt combinations arrive through the Rhino-side hook instead.
+            if ((e.Modifiers & Keys.Alt) != Keys.None) return;
+            var id = Commands.Match(e.KeyCode | e.Modifiers);
+            if (id == null) return;
+            RunCommand(id); e.Handled = true; e.SuppressKeyPress = true;
         }
         private static void OpenAtCenter()
         {
@@ -339,7 +389,11 @@ namespace WireShelf
         {
             if (sender.Document != document) return GH_ObjectResponse.Release;
             if (e.Button != MouseButtons.Left) return base.RespondToMouseUp(sender, e);
-            var target = document.FindAttributeByGrip(e.CanvasLocation, false, !fromInput, fromInput, 10);
+            // Any grip, either direction, measured in screen pixels rather than canvas
+            // units: releasing a wire near a port is a connection attempt, never a request
+            // for the palette, and at low zoom ten canvas units is only a pixel or two.
+            var reach = (int)Math.Max(10F, 16F/Math.Max(0.05F, sender.Viewport.Zoom));
+            var target = document.FindAttributeByGrip(e.CanvasLocation, false, true, true, reach);
             if (target != null || Control.ModifierKeys != Keys.None) return base.RespondToMouseUp(sender, e);
             var isClick = ShelfRuntime.Distance(origin, e.ControlLocation) < 6;
             if (firstRelease && isClick) { firstRelease = false; return GH_ObjectResponse.Ignore; }
