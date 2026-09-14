@@ -85,8 +85,19 @@ public static class OperationsTests {
     canvas.Document=doc;
     var feed=Add(doc,new Param_Number(),100,100);
     var sink=Add(doc,new Param_Number(),600,100);
-    var relay=Add(doc,new GH_Relay(),350,100);
-    relay.AddSource(feed); sink.AddSource(relay);
+    sink.AddSource(feed);
+    foreach(var o in doc.Objects) { o.Attributes.ExpireLayout(); o.Attributes.PerformLayout(); }
+    var midpoint=new PointF((feed.Attributes.OutputGrip.X+sink.Attributes.InputGrip.X)/2,
+        (feed.Attributes.OutputGrip.Y+sink.Attributes.InputGrip.Y)/2);
+    IGH_Param from,to;
+    Check(CanvasOperations.FindWire(doc,midpoint,6F,out from,out to) && from==feed && to==sink,"A point on a wire finds that wire");
+    Check(!CanvasOperations.FindWire(doc,new PointF(350,600),6F,out from,out to),"A point away from every wire finds none");
+    var relay=CanvasOperations.InsertRelay(doc,feed,sink,midpoint);
+    Check(relay.Sources.Contains(feed) && sink.Sources.Contains(relay) && !sink.Sources.Contains(feed),"Relay takes over the wire instead of branching");
+    doc.Undo();
+    Check(sink.Sources.Contains(feed) && doc.FindObject(relay.InstanceGuid,false)==null,"Relay insertion has one-step Undo");
+    doc.Redo();
+    relay=(GH_Relay)doc.FindObject(relay.InstanceGuid,false);
     CanvasOperations.DissolveRelay(doc,relay);
     Check(sink.Sources.Contains(feed) && doc.FindObject(relay.InstanceGuid,false)==null,"Dissolving a relay reconnects both ends");
     doc.Undo();
@@ -100,9 +111,10 @@ public static class OperationsTests {
     foreach(var o in doc.Objects) { o.Attributes.ExpireLayout(); o.Attributes.PerformLayout(); }
     var overlapping=Add(doc,new Param_Number(),140,130);
     foreach(var o in doc.Objects) { o.Attributes.ExpireLayout(); o.Attributes.PerformLayout(); }
-    doc.DeselectAll(); group.Attributes.Selected=true;
-    Check(CanvasOperations.Absorb(doc)==1,"Only the overlapping object joins the group");
+    doc.DeselectAll();
+    Check(CanvasOperations.Absorb(doc)==1,"Every group absorbs when nothing is selected");
     Check(group.ObjectIDs.Contains(overlapping.InstanceGuid) && !group.ObjectIDs.Contains(outside.InstanceGuid),"Group absorbs by overlap, not by distance");
+    Check(CanvasOperations.Absorb(doc)==0,"Absorbing twice adds nothing further");
    }
    var lib=new ShelfLibrary(); var section=new ShelfSection(); lib.Sections.Add(section); section.Items.Add(new ShelfItem { ActionId="duplicate",Name="Copy" });
    Check(LibraryStore.Copy(lib).Sections[0].Items[0].ActionId=="duplicate","Operation favorite round-trip");

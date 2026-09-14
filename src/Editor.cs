@@ -34,6 +34,9 @@ namespace WireShelf
                 Ui.Button("+ Operation", AddOperation), Ui.Button("Capture selection", CaptureSelected), Ui.Button("Rename", Rename),
                 Ui.Button("↑", () => MoveItem(-1)), Ui.Button("↓", () => MoveItem(1)), Ui.Button("Move to…", MoveTo), Ui.Button("Delete", Delete));
             tree.Dock = DockStyle.Fill; tree.HideSelection = false; tree.FullRowSelect = true; tree.ItemHeight = 30;
+            // Index 0 is a transparent placeholder, so section rows and favorites whose
+            // component is missing show nothing rather than borrowing the first icon.
+            thumbnails.Images.Add(new Bitmap(20,20));
             tree.ImageList = thumbnails;
             tree.BorderStyle = BorderStyle.FixedSingle; tree.AccessibleName = "Sections and favorites, in display order";
             tree.AfterSelect += delegate { ShowDetails(); };
@@ -76,7 +79,7 @@ namespace WireShelf
             tree.BeginUpdate(); tree.Nodes.Clear();
             foreach (var s in draft.Sections)
             {
-                var group = new TreeNode(s.Title) { Tag = s, ForeColor = Ui.Accent };
+                var group = new TreeNode(s.Title) { Tag = s, ForeColor = Ui.Accent, ImageIndex = 0, SelectedImageIndex = 0 };
                 tree.Nodes.Add(group);
                 if (ReferenceEquals(selection, s)) tree.SelectedNode = group;
                 foreach (var item in s.Items)
@@ -107,7 +110,7 @@ namespace WireShelf
         {
             int index;
             if (thumbnailIndex.TryGetValue(key, out index)) return index;
-            if (icon == null) { thumbnailIndex[key] = -1; return -1; }
+            if (icon == null) { thumbnailIndex[key] = 0; return 0; }
             thumbnails.Images.Add(icon);
             index = thumbnails.Images.Count - 1; thumbnailIndex[key] = index; return index;
         }

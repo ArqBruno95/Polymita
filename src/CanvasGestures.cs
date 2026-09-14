@@ -113,11 +113,16 @@ namespace WireShelf
         internal void DoubleClick(object sender, MouseEventArgs e)
         {
             if (e.Button != MouseButtons.Left || canvas.Document == null || Control.ModifierKeys != Keys.None) return;
-            var hit = canvas.Document.FindAttribute(new GH_CanvasMouseEvent(canvas.Viewport,e).CanvasLocation, true);
-            var relay = hit == null ? null : hit.DocObject as GH_Relay;
-            if (relay == null) return;
             var doc = canvas.Document;
-            Ui.Safe(delegate { CanvasOperations.DissolveRelay(doc, relay); canvas.Invalidate(); });
+            var where = new GH_CanvasMouseEvent(canvas.Viewport,e).CanvasLocation;
+            var hit = doc.FindAttribute(where, true);
+            var relay = hit == null ? null : hit.DocObject as GH_Relay;
+            if (relay != null) { Ui.Safe(delegate { CanvasOperations.DissolveRelay(doc, relay); canvas.Invalidate(); }); return; }
+            // A wire can cross a group, so a group under the cursor does not rule one out.
+            if (hit != null && !(hit.DocObject is GH_Group)) return;
+            IGH_Param source, target;
+            if (!CanvasOperations.FindWire(doc, where, 6F/Math.Max(0.05F,canvas.Viewport.Zoom), out source, out target)) return;
+            Ui.Safe(delegate { CanvasOperations.InsertRelay(doc, source, target, where); canvas.Invalidate(); });
         }
         void StartAlign(MouseEventArgs e)
         {
@@ -126,10 +131,16 @@ namespace WireShelf
             var modifiers = Control.ModifierKeys & (Keys.Control|Keys.Shift|Keys.Alt);
             if ((modifiers & Keys.Control) != 0) return;
             if (!SnapEnabled && modifiers == Keys.None) return;
-            if (canvas.ActiveInteraction == null || canvas.ActiveInteraction.GetType() != typeof(GH_DragInteraction)) return;
+            // Grasshopper starts its drag before this event runs, but not for every
+            // modifier. Taking over a null interaction as well is safe as long as the
+            // press really landed on something already selected, which is a drag.
+            var live = canvas.ActiveInteraction;
+            if (live != null && live.GetType() != typeof(GH_DragInteraction)) return;
             var ev = new GH_CanvasMouseEvent(canvas.Viewport,e);
             var ids = CanvasOperations.ExpandSelection(canvas.Document);
             if (ids.Count == 0) return;
+            var under = canvas.Document.FindAttribute(ev.CanvasLocation, true);
+            if (under == null || !ids.Contains(under.GetTopLevel.DocObject.InstanceGuid)) return;
             if (canvas.Document.Objects.Any(o=>ids.Contains(o.InstanceGuid) && !(o is IGH_Component || o is IGH_Param || o is GH_Group))) return;
             if ((modifiers & Keys.Alt) != 0)
             {
