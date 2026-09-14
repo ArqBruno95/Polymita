@@ -1,0 +1,9 @@
+# Build output
+dist/
+test-output/
+bin/
+obj/
+
+# Local settings backups
+*.bak
+*.tmp

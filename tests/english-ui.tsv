@@ -1,0 +1,178 @@
+Nítido	Zunzún
+NÍTIDO	ZUNZÚN
+NitidoTool	ZunzunTool
+Favoritos y recetas de componentes para Grasshopper	Favorites, recipes and canvas tools for Grasshopper
+Tu biblioteca de favoritos y recetas, a un cable de distancia.	Your favorites, recipes and tools, one wire away.
+ · Buscar / Profiler	 · Find / Profiler
+ · Nombres	 · Labels
+ · Componente estándar	 · Standard component
+ · configuración guardada	 · saved configuration
+ · Configuración nativa guardada	 · Saved native configuration
+ · Operación sobre la selección\n	 · Selection operation\n
+ · Receta	 · Recipe
+   · receta	   · recipe
+ favoritos?	 favorites?
+ resultados · Última solución: 	 results · Last solution: 
+¿Eliminar la sección y sus 	Delete this section and its 
+¿Guardar los cambios de la biblioteca antes de cerrar?	Save library changes before closing?
+\nEntrada preferida: 	\nPreferred input: 
+   ·   Salida preferida: 	   ·   Preferred output: 
++ Componente	+ Component
++ Operación	+ Operation
++ Sección	+ Section
+90° forma una esquina recta. Los puertos alineados\nforman una línea recta en la variante ortogonal.	Adaptive: horizontal ends and an automatic diagonal.\nAligned ports may produce a straight wire.
+Abre una definición de Grasshopper.	Open a Grasshopper definition.
+Abre una definición para buscar componentes.	Open a definition to find components.
+Abre una definición primero.	Open a definition first.
+Abre una definición y selecciona los componentes.	Open a definition and select the components.
+Abre una definición y selecciona un componente.	Open a definition and select a component.
+Abrir favoritos aquí	Open favorites here
+Aceptar	OK
+Acerca de / Ayuda	About / Help
+Activar al soltar un cable	Enable on wire release
+Activar Profiler	Enable Profiler
+Actúa sobre la selección actual del canvas.	Runs on the current canvas selection.
+Actualizar receta	Update recipe
+Adicionales	Additional
+Alt+W: conectar selección · Alt+Q: duplicar selección.\nCtrl+Shift+F: buscar / Profiler.\n\n	Alt+W: connect selection · Alt+Q: duplicate selection.\nCtrl+Shift+F: find / Profiler.\n\n
+Añadir componente instalado	Add installed component
+Añadir operación	Add operation
+Añadir	Add
+Aplicar	Apply
+Árboles y lógica	Trees and logic
+Arrastra un cable desde un input u output y suéltalo en un espacio vacío. También puedes hacer clic en el puerto y después en el lienzo.\n\n	Drag a wire from an input or output and release over empty canvas. You can also click a port and then empty canvas.\n\n
+Biblioteca Nítido	Zunzún library
+Buscar componentes instalados	Search installed components
+Buscar componentes por nombre, alias o categoría	Search components by name, nickname or category
+Buscar en el script / Profiler	Find in definition / Profiler
+Buscar favoritos por nombre, notas o sección	Search favorites by name, notes or section
+Buscar favoritos…	Search favorites…
+Buscar por nombre o categoría…	Search by name or category…
+Buscar…	Search…
+Caja de herramientas / Vista Rhino	Rhino viewport
+Cancelar	Cancel
+Capturar selección	Capture selection
+Cerrar	Close
+Color de selección…	Selection color…
+Componente	Component
+Conecta de izquierda a derecha, por orden de puertos.	Connects left to right, in port order.
+Conectar selección	Connect selection
+Conectar	Connect
+Configura un componente, selecciónalo y guárdalo como receta. Se conservan sus opciones y datos persistentes.\n\n	Configure a component, select it and save it as a recipe. Its settings and persistent data are preserved.\n\n
+Configuración de herramientas vacía.	Tool settings are empty.
+Copia componentes y grupos completos a un espacio libre a la derecha.	Copies components and complete groups to free space on the right.
+Ctrl+Espacio: favoritos · Ctrl+Shift+B: biblioteca · Ctrl+Shift+R: capturar selección.\n\n	Ctrl+Space: favorites · Ctrl+Shift+B: library · Ctrl+Shift+R: capture selection.\n\n
+Cuadrícula de favoritos. Flechas para navegar y Enter para insertar.	Favorites grid. Use arrow keys to navigate and Enter to insert.
+Cuatro botones junto al lápiz: viewport, biblioteca, wires y nombres.\n\n	Four buttons beside Sketch: viewport, library, wires and labels.\n\n
+Curvas	Curves
+Datos y árboles	Data and trees
+Desactiva QuickConnection si ambos intentan gestionar los mismos cables.\n\n	Disable QuickConnection if both plugins intercept the same wires.\n\n
+Dibujar wires con dos segmentos	Draw segmented wires
+Doble Shift: insertar sin cable donde está el cursor. Un clic en un icono inserta; botón derecho elige puerto.\n\n	Double Shift: insert without a wire at the cursor. Click an icon to insert; right-click to choose a port.\n\n
+Dos segmentos con giro configurable	Adaptive three-segment wire
+Dos segmentos ortogonales	Two orthogonal segments
+Duplicar selección	Duplicate selection
+Editar biblioteca	Edit library
+Ejecutar operación	Run operation
+El componente de origen ya no está en esta definición.	The source component is no longer in this definition.
+El componente no permite guardar su estado.	This component cannot save its state.
+El favorito no tiene ese puerto. Selecciona otro puerto o insértalo sin cable.	This favorite has no such port. Choose another port or insert without a wire.
+Elige un componente o parámetro con puertos.	Choose a component or parameter with ports.
+Eliminar	Delete
+Entrada preferida	Preferred input
+Entrada 	Input 
+Esta conexión crearía un ciclo. Revisa la dirección de los componentes.	This connection would create a cycle. Check the component direction.
+Esta versión de Grasshopper no expone el trazado de cables compatible.	This Grasshopper version does not expose a compatible wire path method.
+Estilo de viewport	Display mode
+Estilo de wires	Wire style
+Estilo y color de cables	Wire style and color
+Exportar…	Export…
+Favorito no válido o receta demasiado grande (máximo 8 MB).	Invalid favorite or recipe too large (maximum 8 MB).
+Favoritos	Favorites
+Formato de biblioteca no compatible (se requiere versión 1).	Unsupported library format (version 1 required).
+Grasshopper no pudo copiar la selección.	Grasshopper could not copy the selection.
+Grasshopper no pudo restaurar esta receta.	Grasshopper could not restore this recipe.
+Guardar selección como receta…	Save selection as recipe…
+Guardar	Save
+Herramientas	Tools
+Importar…	Import…
+Insertar sin cable	Insert without a wire
+Inspirado en QuickConnection, WiresRenderer y Sunglasses.\nGPL-3.0-or-later · Licencia y código fuente en el paquete.	Inspired by QuickConnection, WiresRenderer and Sunglasses.\nGPL-3.0-or-later · License and source included in the package.
+La biblioteca principal está dañada. Se ha recuperado la copia de seguridad. Guarda desde el editor para repararla.	The main library is damaged. A backup was recovered. Save from the editor to repair it.
+La biblioteca supera 32 MB.	The library exceeds 32 MB.
+La definición ha cambiado. Abre Nítido de nuevo.	The definition has changed. Open Zunzún again.
+La receta supera 8 MB.	The recipe exceeds 8 MB.
+La selección no contiene salidas y entradas conectables.	The selection has no connectable outputs and inputs.
+Las secciones aparecen como títulos visibles en la paleta.\nUsa ↑ / ↓ o Alt + flechas para cambiar el orden.	Sections appear as headings in the palette.\nUse ↑ / ↓ or Alt + arrow keys to reorder.
+Mallas	Meshes
+Más lentos primero	Slowest first
+Máximo: 10.000 favoritos.	Maximum: 10,000 favorites.
+Máximo: 200 secciones.	Maximum: 200 sections.
+Mi biblioteca	My library
+Mostrar / ocultar viewport	Show / hide viewport
+Mostrar títulos por debajo de este zoom (%)	Show group titles below this zoom (%)
+Mover a…	Move to…
+Mover favorito a sección	Move favorite to section
+Mover	Move
+Biblioteca guardada	Library saved
+Sin cable	No wire
+No está instalado el componente de «	The component for «
+No hay favoritos que coincidan.	No matching favorites.
+No se encuentra la selección de cables compatible con esta versión de Grasshopper.	No compatible wire hit-test method was found in this Grasshopper version.
+No se pudo activar el atajo Doble Shift.	The Double Shift shortcut could not be enabled.
+No se pudo guardar la copia del componente.	The component copy could not be saved.
+No se pudo identificar toda la selección en la copia.	The full selection could not be identified in the copy.
+No se pudo insertar la copia.	The copy could not be inserted.
+No se pudo leer la biblioteca. Se conserva el archivo original.\n	The library could not be read. The original file is preserved.\n
+No se puede crear «	Could not create «
+Nombre encima de los componentes	Show component names above objects
+Nombres de componentes y grupos	Component and group labels
+Nombre del favorito	Favorite name
+Nombre	Name
+Notas / búsqueda	Notes / search
+Nueva sección	New section
+Números y dominios	Numbers and domains
+Operación desconocida.	Unknown operation.
+Operaciones	Operations
+Organiza secciones y favoritos. Guarda componentes configurados desde el lienzo.	Organize sections and favorites. Save configured components from the canvas.
+Panel · lista 0–1	Panel · list 0–1
+Panel de QuickConnection · 	QuickConnection panel · 
+Parámetros y listas	Parameters and lists
+Planos y vectores	Planes and vectors
+Planos	Planes
+Profiler activo · mide al recalcular	Profiler enabled · measures on recompute
+Propiedades del favorito	Favorite properties
+Propiedades…	Properties…
+Puntos	Points
+Renombrar	Rename
+Resaltar conexiones seleccionadas	Highlight selected connections
+Resultados y tiempos del Profiler	Search results and Profiler timings
+Salida preferida	Preferred output
+Salida 	Output 
+Sección no válida: revisa su título e identificador.	Invalid section: check its title and identifier.
+Secciones y favoritos, en orden de aparición	Sections and favorites, in display order
+Selecciona dos o más componentes. El receptor debe estar a la derecha.	Select two or more components. Place the receiver on the right.
+Selecciona el mismo tipo de componente que este favorito.	Select the same component type as this favorite.
+Selecciona exactamente un componente o parámetro para guardar su configuración.	Select exactly one component or parameter to save its configuration.
+Selecciona los componentes o grupos que quieras duplicar.	Select the components or groups to duplicate.
+Selecciona un componente o parámetro, como Panel o Merge.	Select a component or parameter, such as Panel or Merge.
+Sin puerto en esta dirección	No port in this direction
+Sitúa el receptor un poco más a la derecha para distinguirlo.	Move the receiver a little farther right to distinguish it.
+Superficies	Surfaces
+Tamaño de títulos de grupo	Group title size
+Tamaño del título (px)	Group title size (px)
+Tipo de vista	View direction
+Título de sección	Section title
+Títulos grandes de grupos al alejar	Large group titles when zoomed out
+Transformaciones	Transforms
+Tu biblioteca, a tu manera\n	Your library, your way\n
+Última medición, incluidos los inputs. —: sin medición o pendiente de cálculo. Activa Profiler y recalcula (F5) para actualizar. Nivel actual del script.	Last measurement, including inputs. —: no current timing or pending recompute. Enable Profiler and recompute (F5) to update. Current definition level.
+Umbral de zoom en porcentaje	Zoom threshold as a percentage
+Un clic: conectar · Botón derecho: elegir puerto o insertar sin cable	Click: connect · Right-click: choose port or insert without wire
+Un clic: insertar · Botón derecho: opciones · Esc: cerrar	Click: insert · Right-click: options · Esc: close
+Una operación no contiene una receta de componente.	An operation does not contain a component recipe.
+Usa Capturar selección en el editor abierto.	Use Capture selection in the open editor.
+Usar alias (NickName)	Use nicknames
+Variante de wire	Wire style
+Vista de Rhino integrada	Embedded Rhino viewport
+Visualización	Display
