@@ -28,7 +28,8 @@ public static class VisualRegressionTests {
     }
    }
    Check(Brand.Name=="Polymita","New brand name");
-   foreach(var icon in new[]{Brand.Main,Brand.Labels})Check(icon.Width==24&&icon.Height==24,"Native toolbar icon dimensions");
+   foreach(var icon in new[]{Brand.Main,Brand.Labels,Brand.Find})Check(icon.Width==24&&icon.Height==24,"Native toolbar icon dimensions");
+   Brand.Find.Save(Path.Combine(root,"test-output","Polymita-find-icon.png"));
    Brand.Main.Save(Path.Combine(root,"test-output","Polymita-icon.png"));
    Brand.Labels.Save(Path.Combine(root,"test-output","Polymita-labels-icon.png"));
    log.WriteLine(count+" visual checks passed.");

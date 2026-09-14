@@ -6,7 +6,7 @@ Polymita is the scientific name used internationally for Cuba's painted snails. 
 
 ## Changes in 0.7.0
 
-- **Cut wires:** hold Ctrl, press the left mouse button on canvas background, and sweep across connected wires. The swept path is drawn on the canvas while the stroke is live. Release to finish. A single Undo restores the whole stroke, including input source order. Escape cancels the stroke. Hidden wires are preserved. Ctrl-click on a component retains native multiselection.
+- **Cut wires:** hold Ctrl, press the left mouse button on canvas background, and sweep across connected wires. Only Ctrl and the left button are needed, and the stroke continues for as long as that button is held, whether or not Ctrl stays down. The swept path is drawn on the canvas while the stroke is live. Release the button to finish. A single Undo restores the whole stroke, including input source order. Escape cancels the stroke. Hidden wires are preserved. Ctrl-click on a component retains native multiselection.
 - **Align while dragging:** components and complete groups snap to nearby edges and centers with horizontal/vertical guides. The selection moves together; nested group contents retain their relative positions. The snap radius is 8 screen pixels at any zoom. Hold **Alt** during the drag to suspend snapping. Undo/Redo restores the whole move; Escape cancels.
 - The Polymita menu has **Cut wires · Ctrl + left drag** and **Snap to edges and centers · hold Alt to suspend** switches. Both start enabled and are stored in `toolbox.json`, so they survive a restart. Selection containing sketches or other non-component objects keeps native dragging.
 
@@ -29,7 +29,7 @@ Manual installation: copy `dist/Polymita.gha` and `dist/runtimes` into `%APPDATA
 
 ## Toolbar and tools
 
-Four icons beside Grasshopper's Sketch pencil open the viewport, favorite-library editor, wire settings and label settings. Tools open only when called. The viewport starts hidden. **Find / Profiler** is in the menu and opens with **Ctrl+Shift+F**. It locates components and shows native processor timings after recomputing the definition.
+Five icons beside Grasshopper's Sketch pencil open the viewport, favorite-library editor, wire settings, label settings and **Find / Profiler**, whose magnifier carries the painted-snail palette. Tools open only when called. The viewport starts hidden. Find / Profiler is also in the menu and opens with **Ctrl+Shift+F**. It locates components and shows native processor timings after recomputing the definition.
 
 ## Favorites and recipes
 

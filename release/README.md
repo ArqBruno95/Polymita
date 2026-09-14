@@ -14,7 +14,8 @@ are carried inside it, so nothing else has to be copied.
 5. Right-click `Polymita.gha` → **Properties** → tick **Unblock** → OK. Windows marks
    files that arrived from the internet and Grasshopper silently refuses to load them.
 6. Start Rhino and open Grasshopper. A **Polymita** menu appears in the Grasshopper
-   window and four icons appear beside the Sketch pencil.
+   window and five icons appear beside the Sketch pencil: viewport, library, wires,
+   labels and the magnifier for Find in definition / Profiler.
 
 Your existing library and settings are kept: they live in `%APPDATA%\Grasshopper\WireShelf`
 and are not touched by installing or removing the plug-in.

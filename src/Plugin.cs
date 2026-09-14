@@ -172,7 +172,7 @@ namespace WireShelf
                 { ShortcutKeys = Keys.Control | Keys.Space });
             menu.DropDownItems.Add(new ToolStripSeparator());
             menu.DropDownItems.Add("Rhino viewport", null, delegate { OpenToolbox(0); });
-            menu.DropDownItems.Add(new ToolStripMenuItem("Find in definition / Profiler", null, delegate { OpenToolbox(1); }) { ShortcutKeys = Keys.Control | Keys.Shift | Keys.F });
+            menu.DropDownItems.Add(new ToolStripMenuItem("Find in definition / Profiler", Brand.Find, delegate { OpenToolbox(1); }) { ShortcutKeys = Keys.Control | Keys.Shift | Keys.F });
             menu.DropDownItems.Add("Wire style and color", null, delegate { OpenToolbox(2); });
             menu.DropDownItems.Add("Component and group labels",Brand.Labels,delegate { OpenToolbox(3); });
             menu.DropDownItems.Add(new ToolStripMenuItem("Connect selection",Brand.Connect,delegate { RunOperation("connect"); }) { ShortcutKeyDisplayString="Alt+W" });
@@ -200,12 +200,15 @@ namespace WireShelf
             {
                 var pencil=strip.Items.Cast<ToolStripItem>().FirstOrDefault(i=>(i.Name+" "+i.ToolTipText+" "+i.Text).IndexOf("sketch",StringComparison.OrdinalIgnoreCase)>=0);
                 if(pencil==null) continue;
-                var icons=new[] { Brand.View,Brand.Library,Brand.Wires,Brand.Labels };
-                var titles=new[] { "Polymita · Show / hide viewport", "Polymita · Edit library", "Polymita · Wire style", "Polymita · Component and group labels" };
+                var icons=new[] { Brand.View,Brand.Library,Brand.Wires,Brand.Labels,Brand.Find };
+                var titles=new[] { "Polymita · Show / hide viewport", "Polymita · Edit library", "Polymita · Wire style",
+                    "Polymita · Component and group labels", "Polymita · Find in definition / Profiler · Ctrl+Shift+F" };
+                // Toolbox tab each button opens; -1 is the library editor, which is its own window.
+                var tabs=new[] { 0,-1,2,3,1 };
                 int index=strip.Items.IndexOf(pencil)+1;
-                for(int i=0;i<4;i++) {
-                    int action=i; var button=new ToolStripButton { Name="PolymitaTool"+i,Image=icons[i],DisplayStyle=ToolStripItemDisplayStyle.Image,ToolTipText=titles[i],AccessibleName=titles[i],AutoSize=false,Size=pencil.Size };
-                    button.Click+=delegate { if(action==1) Edit(); else OpenToolbox(action==0?0:action); };
+                for(int i=0;i<icons.Length;i++) {
+                    int tab=tabs[i]; var button=new ToolStripButton { Name="PolymitaTool"+i,Image=icons[i],DisplayStyle=ToolStripItemDisplayStyle.Image,ToolTipText=titles[i],AccessibleName=titles[i],AutoSize=false,Size=pencil.Size };
+                    button.Click+=delegate { if(tab<0) Edit(); else OpenToolbox(tab); };
                     strip.Items.Insert(index++,button); buttons.Add(button);
                 }
                 break;

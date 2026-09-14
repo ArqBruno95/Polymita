@@ -64,30 +64,39 @@ namespace WireShelf
     }
 
     // Only intercept the canvas itself; Ctrl-click on an object keeps native multiselection.
-    internal sealed class CanvasGestures : IMessageFilter, IDisposable
+    internal sealed class CanvasGestures : IDisposable
     {
         readonly GH_Canvas canvas;
         internal static bool CutEnabled = true, SnapEnabled = true;
         internal CanvasGestures(GH_Canvas canvas)
-        { this.canvas=canvas; Application.AddMessageFilter(this); canvas.MouseDown += Down; }
-        public bool PreFilterMessage(ref Message m)
+        { this.canvas=canvas; canvas.MouseDown += Down; }
+        void Down(object sender, MouseEventArgs e)
         {
-            if (m.Msg != 0x201 || m.HWnd != canvas.Handle || !CutEnabled ||
-                (m.WParam.ToInt64() & 0xC) != 0x8 || (Control.ModifierKeys & Keys.Alt) != 0 ||
-                canvas.Document == null || canvas.ActiveInteraction != null) return false;
-            // Read the coordinates/modifiers of this message, not a later cursor position.
-            long location=m.LParam.ToInt64();
-            var p = new Point(unchecked((short)(location & 0xffff)),unchecked((short)((location >> 16) & 0xffff)));
-            var e = new GH_CanvasMouseEvent(canvas.Viewport, new MouseEventArgs(MouseButtons.Left,1,p.X,p.Y,0));
+            if (e.Button != MouseButtons.Left || canvas.Document == null) return;
+            if (StartCut(new GH_CanvasMouseEvent(canvas.Viewport,e), Control.ModifierKeys)) return;
+            StartAlign(e);
+        }
+        // Rhino pumps its own messages, so Application.AddMessageFilter never saw the
+        // canvas's ordinary mouse messages — the same reason the double-Shift gesture
+        // needs a keyboard hook. It only ran while something else pumped through
+        // WinForms, such as the modal loop a right button opens, which is why the
+        // gesture used to need a second button to fire. The canvas event always runs.
+        // Grasshopper has begun its own interaction by then; replacing it is what the
+        // alignment gesture already does, and the selection rectangle Ctrl starts
+        // applies nothing until a mouse-up that it will now never receive.
+        internal bool StartCut(GH_CanvasMouseEvent e, Keys modifiers)
+        {
+            if (!CutEnabled || modifiers != Keys.Control || canvas.Document == null) return false;
+            if (canvas.ActiveInteraction is CutInteraction) return true;
             var hit = canvas.Document.FindAttribute(e.CanvasLocation,true);
             if (hit != null && !(hit.DocObject is GH_Group)) return false;
             canvas.Focus();
             canvas.ActiveInteraction = new CutInteraction(canvas,e);
             return true;
         }
-        void Down(object sender, MouseEventArgs e)
+        void StartAlign(MouseEventArgs e)
         {
-            if (!SnapEnabled || e.Button != MouseButtons.Left || Control.ModifierKeys != Keys.None || canvas.Document == null) return;
+            if (!SnapEnabled || Control.ModifierKeys != Keys.None) return;
             if (canvas.ActiveInteraction == null || canvas.ActiveInteraction.GetType() != typeof(GH_DragInteraction)) return;
             var ev = new GH_CanvasMouseEvent(canvas.Viewport,e);
             var ids = CanvasOperations.ExpandSelection(canvas.Document);
@@ -98,7 +107,7 @@ namespace WireShelf
         public void Dispose()
         {
             if (canvas.ActiveInteraction is CutInteraction || canvas.ActiveInteraction is AlignInteraction) canvas.ActiveInteraction=null;
-            Application.RemoveMessageFilter(this); canvas.MouseDown -= Down;
+            canvas.MouseDown -= Down;
         }
     }
 
@@ -136,7 +145,10 @@ namespace WireShelf
         public override GH_ObjectResponse RespondToMouseMove(GH_Canvas sender, GH_CanvasMouseEvent e)
         {
             if (sender.Document != doc) return GH_ObjectResponse.Release;
-            if ((Control.ModifierKeys & Keys.Control) == 0) { Commit(); return GH_ObjectResponse.Release; }
+            // The stroke lasts while the left button is held. Letting go of Ctrl part-way
+            // no longer ends it, so a long sweep does not depend on holding the modifier,
+            // and a mouse-up that never arrives cannot leave the gesture running.
+            if ((Control.MouseButtons & MouseButtons.Left) == 0) { Commit(); return GH_ObjectResponse.Release; }
             Sweep(e.CanvasLocation); sender.Invalidate(); return GH_ObjectResponse.Handled;
         }
         internal void Sweep(PointF point)
@@ -191,11 +203,7 @@ namespace WireShelf
         public override GH_ObjectResponse RespondToKeyDown(GH_Canvas sender, KeyEventArgs e)
         { return e.KeyCode == Keys.Escape ? GH_ObjectResponse.Release : GH_ObjectResponse.Handled; }
         public override GH_ObjectResponse RespondToKeyUp(GH_Canvas sender, KeyEventArgs e)
-        {
-            if(e.KeyCode==Keys.ControlKey || e.KeyCode==Keys.LControlKey || e.KeyCode==Keys.RControlKey)
-            { if(sender.Document==doc) Commit(); return GH_ObjectResponse.Release; }
-            return GH_ObjectResponse.Handled;
-        }
+        { return GH_ObjectResponse.Handled; }
         public override void Destroy()
         {
             if (!finished && originals.Count>0)

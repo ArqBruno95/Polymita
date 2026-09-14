@@ -39,14 +39,16 @@ public static class GestureTests
                 var b=Add(doc,new Param_Number(),100,200);
                 var target=Add(doc,new Param_Number(),500,150); target.AddSource(a);target.AddSource(b);
                 using(var filter=new CanvasGestures(canvas)) {
-                    var pt=canvas.Viewport.ProjectPoint(new PointF(300,0));
-                    var packed=new IntPtr(((int)pt.Y<<16) | ((int)pt.X & 0xffff));
-                    var message=Message.Create(canvas.Handle,0x201,new IntPtr(9),packed);
-                    Check(filter.PreFilterMessage(ref message),"Ctrl-left canvas message starts cutter");
+                    var box=a.Attributes.Bounds;
+                    var over=E(box.Left+box.Width/2,box.Top+box.Height/2);
+                    Check(filter.StartCut(E(300,0),Keys.Control),"Ctrl and the left button start the cutter");
                     Check(canvas.ActiveInteraction is CutInteraction && canvas.ActiveInteraction.IsActive,"Cutter owns an active canvas interaction");
+                    Check(filter.StartCut(E(300,0),Keys.Control),"A press during a live stroke does not restart it");
                     canvas.ActiveInteraction=null;
-                    message=Message.Create(canvas.Handle,0x201,new IntPtr(1),packed);
-                    Check(!filter.PreFilterMessage(ref message),"Ordinary clicks remain native");
+                    Check(!filter.StartCut(E(300,0),Keys.None),"Ordinary clicks remain native");
+                    Check(!filter.StartCut(E(300,0),Keys.Control|Keys.Shift),"Ctrl with a second modifier remains native");
+                    Check(!filter.StartCut(over,Keys.Control),"Ctrl on a component keeps native multiselection");
+                    Check(canvas.ActiveInteraction==null,"Nothing is taken over when the cutter declines");
                 }
                 var cut=new CutInteraction(canvas,E(300,0));
                 cut.Sweep(new PointF(300,300));
