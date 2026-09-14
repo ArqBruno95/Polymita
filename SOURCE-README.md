@@ -14,6 +14,14 @@ The resulting `dist/Polymita.gha` and `dist/runtimes` folder can be copied to `%
 
 `WireShelf.csproj` contains the equivalent MSBuild project for the .NET Framework 4.8 targeting pack. Rhino and Grasshopper assemblies are referenced from the configured `RhinoRoot` and are not redistributed here.
 
+Passing `-p:RhinoNuGetVersion=8.34.26223.11001` references McNeel's published packages instead of a local installation, which builds the plug-in on a machine without Rhino:
+
+```
+dotnet build WireShelf.csproj -c Release -p:RhinoNuGetVersion=8.34.26223.11001 -o dist
+```
+
+Both build paths embed the three Harmony runtimes in the assembly, so `dist/Polymita.gha` installs on its own. The `dist/runtimes` folder is still written beside it and is still preferred when present.
+
 ## Tests
 
 Run `./tests/run-core.ps1` and `./tests/run-toolbox.ps1` for the standalone checks. `./tests/run-gestures.ps1` compiles the canvas-gesture suite into `test-output/Polymita.GestureTest06.dll`, which `tests/run-gestures.py` then executes from Rhino's `RunPythonScript`. The scripts compile against the installed Rhino 8 SDK. The files named `*preview.py`, `*native*.py`, and `run-gestures.py` are Rhino-side integration helpers and should be run from Rhino's `RunPythonScript` command when testing UI behavior.

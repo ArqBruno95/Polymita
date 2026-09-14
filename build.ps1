@@ -15,6 +15,11 @@ $refs = @(
 if (!(Test-Path -LiteralPath $compiler)) { throw 'The .NET Framework compiler was not found. Use dotnet build with the SDK and .NET 4.8 targeting pack.' }
 $argsList = @('/nologo', '/target:library', '/platform:anycpu', '/optimize+', '/warn:4', '/utf8output', ('/out:' + (Join-Path $out 'Polymita.gha')))
 foreach ($ref in $refs) { $argsList += '/reference:' + $ref }
+# Carried inside the assembly so the plug-in installs as a single .gha. The copies below
+# are still written next to it, and WireStyles prefers them when they are present.
+foreach ($framework in @('net48', 'net7.0', 'net8.0')) {
+    $argsList += '/resource:' + (Join-Path $root ('lib\harmony-2.3.3\lib\' + $framework + '\0Harmony.dll')) + ',Polymita.runtimes.' + $framework + '.0Harmony.dll'
+}
 $argsList += @(Get-ChildItem -LiteralPath (Join-Path $root 'src') -Filter '*.cs' | ForEach-Object FullName)
 & $compiler @argsList
 if ($LASTEXITCODE -ne 0) { throw "Build failed: $LASTEXITCODE" }

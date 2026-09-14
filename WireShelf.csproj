@@ -1,29 +1,43 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
-    <UseWindowsForms>true</UseWindowsForms>
     <LangVersion>5</LangVersion>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <AssemblyName>Polymita</AssemblyName>
     <TargetExt>.gha</TargetExt>
     <RhinoRoot Condition="'$(RhinoRoot)' == ''">C:\Program Files\Rhino 8</RhinoRoot>
+    <!-- Set RhinoNuGetVersion to a Rhino 8 version, for example 8.34.26223.11001, to build
+         against McNeel's NuGet packages instead of a local installation. That makes the
+         project buildable on a machine without Rhino, including non-Windows hosts. -->
+    <RhinoNuGetVersion Condition="'$(RhinoNuGetVersion)' == ''"></RhinoNuGetVersion>
+    <NoWarn>NU1701</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="src\*.cs" />
-    <Reference Include="Grasshopper"><HintPath>$(RhinoRoot)\Plug-ins\Grasshopper\Grasshopper.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="GH_IO"><HintPath>$(RhinoRoot)\Plug-ins\Grasshopper\GH_IO.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="RhinoCommon"><HintPath>$(RhinoRoot)\System\RhinoCommon.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="RhinoWindows"><HintPath>$(RhinoRoot)\System\RhinoWindows.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Xml" />
   </ItemGroup>
+  <!-- Rhino and Grasshopper assemblies are referenced, never redistributed. -->
+  <ItemGroup Condition="'$(RhinoNuGetVersion)' == ''">
+    <Reference Include="Grasshopper"><HintPath>$(RhinoRoot)\Plug-ins\Grasshopper\Grasshopper.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="GH_IO"><HintPath>$(RhinoRoot)\Plug-ins\Grasshopper\GH_IO.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="RhinoCommon"><HintPath>$(RhinoRoot)\System\RhinoCommon.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="RhinoWindows"><HintPath>$(RhinoRoot)\System\RhinoWindows.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+  <ItemGroup Condition="'$(RhinoNuGetVersion)' != ''">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <PackageReference Include="RhinoCommon" Version="$(RhinoNuGetVersion)" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="Grasshopper" Version="$(RhinoNuGetVersion)" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="RhinoWindows" Version="$(RhinoNuGetVersion)" ExcludeAssets="runtime" PrivateAssets="all" />
+  </ItemGroup>
+  <!-- Carried inside the assembly so the plug-in installs as a single .gha. WireStyles
+       still prefers a copy under runtimes\ beside it, so the folder layout also works. -->
   <ItemGroup>
-    <Content Include="lib\harmony-2.3.3\lib\net48\0Harmony.dll"><Link>runtimes\net48\0Harmony.dll</Link><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
-    <Content Include="lib\harmony-2.3.3\lib\net7.0\0Harmony.dll"><Link>runtimes\net7.0\0Harmony.dll</Link><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
-    <Content Include="lib\harmony-2.3.3\lib\net8.0\0Harmony.dll"><Link>runtimes\net8.0\0Harmony.dll</Link><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
+    <EmbeddedResource Include="lib\harmony-2.3.3\lib\net48\0Harmony.dll"><LogicalName>Polymita.runtimes.net48.0Harmony.dll</LogicalName></EmbeddedResource>
+    <EmbeddedResource Include="lib\harmony-2.3.3\lib\net7.0\0Harmony.dll"><LogicalName>Polymita.runtimes.net7.0.0Harmony.dll</LogicalName></EmbeddedResource>
+    <EmbeddedResource Include="lib\harmony-2.3.3\lib\net8.0\0Harmony.dll"><LogicalName>Polymita.runtimes.net8.0.0Harmony.dll</LogicalName></EmbeddedResource>
   </ItemGroup>
 </Project>
-

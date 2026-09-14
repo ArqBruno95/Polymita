@@ -95,9 +95,8 @@ namespace WireShelf
                 if (original == null) throw new NotSupportedException("This Grasshopper version does not expose a compatible wire path method.");
                 if (distance == null) throw new NotSupportedException("No compatible wire hit-test method was found in this Grasshopper version.");
                 var framework = Environment.Version.Major >= 8 ? "net8.0" : Environment.Version.Major >= 7 ? "net7.0" : "net48";
-                var folder = Path.GetDirectoryName(typeof(WireStyles).Assembly.Location);
                 var assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == "0Harmony")
-                    ?? Assembly.LoadFrom(Path.Combine(folder, "runtimes", framework, "0Harmony.dll"));
+                    ?? LoadHarmony(framework);
                 var type = assembly.GetType("HarmonyLib.Harmony", true);
                 // A reversible postfix also works when WiresRenderer supplies the original path.
                 // Its patches remain installed; disabling this option immediately restores its result.
@@ -122,6 +121,41 @@ namespace WireShelf
             }
             Redraw();
         }
+        // Polymita installs as a single .gha, so the Harmony runtimes travel inside it.
+        // A copy sitting next to the assembly still wins, which keeps the packaged folder
+        // layout of earlier releases working exactly as before.
+        private static Assembly LoadHarmony(string framework)
+        {
+            var location = typeof(WireStyles).Assembly.Location;
+            if (!String.IsNullOrEmpty(location))
+            {
+                var path = Path.Combine(Path.GetDirectoryName(location), "runtimes", framework, "0Harmony.dll");
+                if (File.Exists(path)) return Assembly.LoadFrom(path);
+            }
+            using (var stream = typeof(WireStyles).Assembly.GetManifestResourceStream("Polymita.runtimes." + framework + ".0Harmony.dll"))
+            {
+                if (stream == null)
+                    throw new NotSupportedException("This build of Polymita does not carry the Harmony runtime for " + framework + ".");
+                var bytes = new byte[stream.Length];
+                for (var read = 0; read < bytes.Length; )
+                {
+                    var step = stream.Read(bytes, read, bytes.Length - read);
+                    if (step <= 0) throw new IOException("The embedded Harmony runtime could not be read.");
+                    read += step;
+                }
+                harmony0 = Assembly.Load(bytes);
+            }
+            if (resolver == null)
+            {
+                // Loaded from memory: a request by name has no file on disk to find.
+                resolver = delegate(object sender, ResolveEventArgs e)
+                { return new AssemblyName(e.Name).Name == "0Harmony" ? harmony0 : null; };
+                AppDomain.CurrentDomain.AssemblyResolve += resolver;
+            }
+            return harmony0;
+        }
+        private static Assembly harmony0;
+        private static ResolveEventHandler resolver;
         private static void RemovePatches()
         {
             if (harmony != null) foreach (var pair in patches)
