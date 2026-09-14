@@ -16,6 +16,9 @@ namespace WireShelf
             if (document == null) throw new InvalidOperationException("Open a Grasshopper definition.");
             if (anchor != null && !document.Objects.Contains(anchor.Attributes.GetTopLevel.DocObject))
                 throw new InvalidOperationException("The source component is no longer in this definition.");
+            // Grasshopper keeps full port names as one canvas-wide display setting, so a
+            // favorite cannot carry it alone; inserting one turns the setting on.
+            Grasshopper.CentralSettings.CanvasFullNames = true;
             var obj = Recipes.Create(item);
             var ports = Recipes.Ports(obj, fromInput);
             if (anchor != null && (portIndex < 0 || portIndex >= ports.Count))

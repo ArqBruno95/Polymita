@@ -16,34 +16,50 @@ namespace WireShelf
 {
     public static class AlignmentGeometry
     {
-        private static void Consider(float value, float reference, ref float best, ref float delta, ref float? guide)
+        // What produced a guide, which is also how it is coloured on the canvas.
+        public const int None = 0, Edge = 1, Centre = 2, Port = 3;
+        private static void Consider(float value, float reference, int kind,
+            ref float best, ref float delta, ref float? guide, ref int bestKind)
         {
             var gap = reference - value; if (gap < 0) gap = -gap;
             // Negated rather than >=, so a NaN bound is skipped exactly as Math.Abs was.
             if (!(gap < best)) return;
-            best = gap; delta = reference - value; guide = reference;
+            best = gap; delta = reference - value; guide = reference; bestKind = kind;
         }
+        public static PointF Snap(RectangleF moving, IEnumerable<RectangleF> targets, float tolerance,
+            out float? guideX, out float? guideY)
+        { int kx, ky; return Snap(moving, targets, null, tolerance, out guideX, out guideY, out kx, out ky); }
         // Runs for every target on every mouse move of a drag. The candidate edges are
         // hoisted out of the loop: building the two three-element arrays per target was
         // the whole allocation cost of aligning inside a large definition.
-        public static PointF Snap(RectangleF moving, IEnumerable<RectangleF> targets, float tolerance,
-            out float? guideX, out float? guideY)
+        public static PointF Snap(RectangleF moving, IEnumerable<RectangleF> targets, IEnumerable<PointF> ports,
+            float tolerance, out float? guideX, out float? guideY, out int kindX, out int kindY)
         {
-            guideX = guideY = null;
+            guideX = guideY = null; kindX = kindY = None;
             float dx = 0, dy = 0, bestX = tolerance, bestY = tolerance;
             float x0 = moving.Left, x1 = moving.Left + moving.Width / 2, x2 = moving.Right;
             float y0 = moving.Top, y1 = moving.Top + moving.Height / 2, y2 = moving.Bottom;
             foreach (var target in targets)
             {
+                // Centre against centre is the one pairing that marks a shared axis;
+                // everything else lines an edge up with something.
                 float tx0 = target.Left, tx1 = target.Left + target.Width / 2, tx2 = target.Right;
-                Consider(x0, tx0, ref bestX, ref dx, ref guideX); Consider(x0, tx1, ref bestX, ref dx, ref guideX); Consider(x0, tx2, ref bestX, ref dx, ref guideX);
-                Consider(x1, tx0, ref bestX, ref dx, ref guideX); Consider(x1, tx1, ref bestX, ref dx, ref guideX); Consider(x1, tx2, ref bestX, ref dx, ref guideX);
-                Consider(x2, tx0, ref bestX, ref dx, ref guideX); Consider(x2, tx1, ref bestX, ref dx, ref guideX); Consider(x2, tx2, ref bestX, ref dx, ref guideX);
+                Consider(x0, tx0, Edge, ref bestX, ref dx, ref guideX, ref kindX); Consider(x0, tx1, Edge, ref bestX, ref dx, ref guideX, ref kindX); Consider(x0, tx2, Edge, ref bestX, ref dx, ref guideX, ref kindX);
+                Consider(x1, tx0, Edge, ref bestX, ref dx, ref guideX, ref kindX); Consider(x1, tx1, Centre, ref bestX, ref dx, ref guideX, ref kindX); Consider(x1, tx2, Edge, ref bestX, ref dx, ref guideX, ref kindX);
+                Consider(x2, tx0, Edge, ref bestX, ref dx, ref guideX, ref kindX); Consider(x2, tx1, Edge, ref bestX, ref dx, ref guideX, ref kindX); Consider(x2, tx2, Edge, ref bestX, ref dx, ref guideX, ref kindX);
                 float ty0 = target.Top, ty1 = target.Top + target.Height / 2, ty2 = target.Bottom;
-                Consider(y0, ty0, ref bestY, ref dy, ref guideY); Consider(y0, ty1, ref bestY, ref dy, ref guideY); Consider(y0, ty2, ref bestY, ref dy, ref guideY);
-                Consider(y1, ty0, ref bestY, ref dy, ref guideY); Consider(y1, ty1, ref bestY, ref dy, ref guideY); Consider(y1, ty2, ref bestY, ref dy, ref guideY);
-                Consider(y2, ty0, ref bestY, ref dy, ref guideY); Consider(y2, ty1, ref bestY, ref dy, ref guideY); Consider(y2, ty2, ref bestY, ref dy, ref guideY);
+                Consider(y0, ty0, Edge, ref bestY, ref dy, ref guideY, ref kindY); Consider(y0, ty1, Edge, ref bestY, ref dy, ref guideY, ref kindY); Consider(y0, ty2, Edge, ref bestY, ref dy, ref guideY, ref kindY);
+                Consider(y1, ty0, Edge, ref bestY, ref dy, ref guideY, ref kindY); Consider(y1, ty1, Centre, ref bestY, ref dy, ref guideY, ref kindY); Consider(y1, ty2, Edge, ref bestY, ref dy, ref guideY, ref kindY);
+                Consider(y2, ty0, Edge, ref bestY, ref dy, ref guideY, ref kindY); Consider(y2, ty1, Edge, ref bestY, ref dy, ref guideY, ref kindY); Consider(y2, ty2, Edge, ref bestY, ref dy, ref guideY, ref kindY);
             }
+            // Grips of the components this selection is actually wired to; only the
+            // moving centre lines up with them.
+            if (ports != null)
+                foreach (var port in ports)
+                {
+                    Consider(x1, port.X, Port, ref bestX, ref dx, ref guideX, ref kindX);
+                    Consider(y1, port.Y, Port, ref bestY, ref dy, ref guideY, ref kindY);
+                }
             return new PointF(dx, dy);
         }
         public static bool Crosses(PointF a, PointF b, PointF c, PointF d, float tolerance)
@@ -69,7 +85,7 @@ namespace WireShelf
         readonly GH_Canvas canvas;
         internal static bool CutEnabled = true, SnapEnabled = true;
         internal CanvasGestures(GH_Canvas canvas)
-        { this.canvas=canvas; canvas.MouseDown += Down; }
+        { this.canvas=canvas; canvas.MouseDown += Down; canvas.MouseDoubleClick += DoubleClick; }
         void Down(object sender, MouseEventArgs e)
         {
             if (e.Button != MouseButtons.Left || canvas.Document == null) return;
@@ -94,20 +110,40 @@ namespace WireShelf
             canvas.ActiveInteraction = new CutInteraction(canvas,e);
             return true;
         }
+        internal void DoubleClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Left || canvas.Document == null || Control.ModifierKeys != Keys.None) return;
+            var hit = canvas.Document.FindAttribute(new GH_CanvasMouseEvent(canvas.Viewport,e).CanvasLocation, true);
+            var relay = hit == null ? null : hit.DocObject as GH_Relay;
+            if (relay == null) return;
+            var doc = canvas.Document;
+            Ui.Safe(delegate { CanvasOperations.DissolveRelay(doc, relay); canvas.Invalidate(); });
+        }
         void StartAlign(MouseEventArgs e)
         {
-            if (!SnapEnabled || Control.ModifierKeys != Keys.None) return;
+            // Ctrl belongs to the cutter and to native multiselection. Shift constrains
+            // the move and Alt copies, so both have to reach the drag interaction.
+            var modifiers = Control.ModifierKeys & (Keys.Control|Keys.Shift|Keys.Alt);
+            if ((modifiers & Keys.Control) != 0) return;
+            if (!SnapEnabled && modifiers == Keys.None) return;
             if (canvas.ActiveInteraction == null || canvas.ActiveInteraction.GetType() != typeof(GH_DragInteraction)) return;
             var ev = new GH_CanvasMouseEvent(canvas.Viewport,e);
             var ids = CanvasOperations.ExpandSelection(canvas.Document);
             if (ids.Count == 0) return;
             if (canvas.Document.Objects.Any(o=>ids.Contains(o.InstanceGuid) && !(o is IGH_Component || o is IGH_Param || o is GH_Group))) return;
+            if ((modifiers & Keys.Alt) != 0)
+            {
+                // Alt leaves the originals where they are and drags a copy instead.
+                if (!Ui.Try(delegate { CanvasOperations.DuplicateInPlace(canvas.Document); })) return;
+                ids = CanvasOperations.ExpandSelection(canvas.Document);
+                if (ids.Count == 0) return;
+            }
             canvas.ActiveInteraction = new AlignInteraction(canvas,ev,ids);
         }
         public void Dispose()
         {
             if (canvas.ActiveInteraction is CutInteraction || canvas.ActiveInteraction is AlignInteraction) canvas.ActiveInteraction=null;
-            canvas.MouseDown -= Down;
+            canvas.MouseDown -= Down; canvas.MouseDoubleClick -= DoubleClick;
         }
     }
 
@@ -228,9 +264,17 @@ namespace WireShelf
         readonly Dictionary<IGH_DocumentObject,PointF> pivots;
         readonly RectangleF bounds;
         readonly RectangleF[] targets;
+        readonly PointF[] ports;
         readonly GH_UndoRecord undo;
         float? guideX, guideY;
+        int kindX, kindY;
         bool committed, moved;
+        static void Grip(List<PointF> into, IGH_Param param, HashSet<Guid> moving, bool output)
+        {
+            if (param == null || param.Attributes == null) return;
+            if (moving.Contains(param.Attributes.GetTopLevel.DocObject.InstanceGuid)) return;
+            into.Add(output ? param.Attributes.OutputGrip : param.Attributes.InputGrip);
+        }
         internal AlignInteraction(GH_Canvas canvas,GH_CanvasMouseEvent e,HashSet<Guid> ids) : base(canvas,e)
         {
             m_active=true; doc=canvas.Document;
@@ -251,6 +295,17 @@ namespace WireShelf
             affected=doc.Objects.OfType<GH_Group>().Where(g=>excluded.Contains(g.InstanceGuid))
                 .OrderBy(g=>Contained(doc,g.InstanceGuid,sizes)).ToArray();
             movers=objects.Where(o=>!(o is GH_Group) || ((GH_Group)o).ObjectIDs.Count==0).ToArray();
+            // Grips of everything this selection is wired to, so the moving centre can
+            // line up with the port it connects to rather than only with bounding boxes.
+            var grips=new List<PointF>();
+            foreach(var obj in objects)
+                foreach(var side in new[]{false,true})
+                    foreach(var port in Recipes.Ports(obj,side))
+                    {
+                        foreach(var source in port.Sources) Grip(grips,source,ids,true);
+                        foreach(var recipient in port.Recipients) Grip(grips,recipient,ids,false);
+                    }
+            ports=grips.ToArray();
             undo=doc.UndoUtil.CreatePivotEvent("Polymita: align selection",objects);
             canvas.CanvasPostPaintObjects+=Paint; canvas.Capture=true;
         }
@@ -278,16 +333,20 @@ namespace WireShelf
             if(sender.Document!=doc) return GH_ObjectResponse.Release;
             var delta=new PointF(e.CanvasX-CanvasPointDown.X,e.CanvasY-CanvasPointDown.Y);
             if(!moved && Math.Abs(delta.X)*sender.Viewport.Zoom<3 && Math.Abs(delta.Y)*sender.Viewport.Zoom<3) return GH_ObjectResponse.Handled;
-            // Alt suspends alignment for the rest of the stroke. Holding any modifier
-            // before pressing already keeps the native drag; this makes the same
-            // modifier work once the drag is under way.
-            if((Control.ModifierKeys & Keys.Alt)!=0) guideX=guideY=null;
-            else
+            // Shift picks the axis from the raw drag and holds the other one still,
+            // before and after snapping, so alignment cannot reintroduce the movement
+            // the modifier just took away.
+            var locked=(Control.ModifierKeys & Keys.Shift)==0 ? 0 : Math.Abs(delta.X)>=Math.Abs(delta.Y) ? 1 : 2;
+            if(locked==1) delta.Y=0; else if(locked==2) delta.X=0;
+            if(CanvasGestures.SnapEnabled)
             {
                 var box=bounds; box.Offset(delta);
-                var snap=AlignmentGeometry.Snap(box,targets,8F/Math.Max(0.05F,sender.Viewport.Zoom),out guideX,out guideY);
+                var snap=AlignmentGeometry.Snap(box,targets,ports,8F/Math.Max(0.05F,sender.Viewport.Zoom),
+                    out guideX,out guideY,out kindX,out kindY);
                 delta.X+=snap.X; delta.Y+=snap.Y;
             }
+            else { guideX=guideY=null; }
+            if(locked==1) { delta.Y=0; guideY=null; } else if(locked==2) { delta.X=0; guideX=null; }
             Position(delta); moved=delta.X!=0 || delta.Y!=0;
             sender.Invalidate(); return GH_ObjectResponse.Handled;
         }
@@ -298,15 +357,22 @@ namespace WireShelf
         }
         public override GH_ObjectResponse RespondToKeyDown(GH_Canvas sender,KeyEventArgs e)
         { return e.KeyCode==Keys.Escape ? GH_ObjectResponse.Release : GH_ObjectResponse.Handled; }
+        // Green lines up an edge, red a centre axis, blue the moving centre with the
+        // grip of a component this selection is wired to.
+        static Color Ink(int kind)
+        {
+            if(kind==AlignmentGeometry.Centre) return Color.FromArgb(214,45,45);
+            if(kind==AlignmentGeometry.Port) return Color.FromArgb(38,94,222);
+            return Color.FromArgb(28,158,72);
+        }
         void Paint(GH_Canvas sender)
         {
-            using(var pen=new Pen(Ui.Accent,1F/Math.Max(0.05F,sender.Viewport.Zoom)))
-            {
-                pen.DashStyle=DashStyle.Dash;
-                var r=sender.Viewport.VisibleRegion;
-                if(guideX.HasValue) sender.Graphics.DrawLine(pen,guideX.Value,r.Top,guideX.Value,r.Bottom);
-                if(guideY.HasValue) sender.Graphics.DrawLine(pen,r.Left,guideY.Value,r.Right,guideY.Value);
-            }
+            var width=1F/Math.Max(0.05F,sender.Viewport.Zoom);
+            var r=sender.Viewport.VisibleRegion;
+            if(guideX.HasValue)
+                using(var pen=new Pen(Ink(kindX),width)) { pen.DashStyle=DashStyle.Dash; sender.Graphics.DrawLine(pen,guideX.Value,r.Top,guideX.Value,r.Bottom); }
+            if(guideY.HasValue)
+                using(var pen=new Pen(Ink(kindY),width)) { pen.DashStyle=DashStyle.Dash; sender.Graphics.DrawLine(pen,r.Left,guideY.Value,r.Right,guideY.Value); }
         }
         public override void Destroy()
         {

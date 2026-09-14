@@ -3,6 +3,7 @@ using Grasshopper.GUI;
 using Grasshopper.GUI.Canvas;
 using Grasshopper.GUI.Canvas.Interaction;
 using Grasshopper.Kernel;
+using Grasshopper.Kernel.Special;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -102,6 +103,10 @@ namespace WireShelf
             try { toolboxSettings = ToolboxSettings.Load(ToolboxPath); } catch (Exception ex) { toolboxSettings = new ToolboxSettings(); Ui.Error(ex); }
             WireStyles.Variant=toolboxSettings.WireVariant;
             CanvasGestures.CutEnabled=toolboxSettings.CutWires; CanvasGestures.SnapEnabled=toolboxSettings.SnapAlign;
+            // Component captions became a default rather than an opt-in. Settings files
+            // written before that carry an explicit false, so turn them on once.
+            if (toolboxSettings.LabelsRevision < 1)
+            { toolboxSettings.ComponentNames = true; toolboxSettings.LabelsRevision = 1; SaveToolboxSettings(); }
             Ui.Safe(()=>WireStyles.SetPolylines(toolboxSettings.Polylines));
             WireStyles.SetHighlight(toolboxSettings.Highlight,Color.FromArgb(toolboxSettings.SelectedArgb));
             shiftFilter = new ShiftFilter();
@@ -177,6 +182,9 @@ namespace WireShelf
             menu.DropDownItems.Add("Component and group labels",Brand.Labels,delegate { OpenToolbox(3); });
             menu.DropDownItems.Add(new ToolStripMenuItem("Connect selection",Brand.Connect,delegate { RunOperation("connect"); }) { ShortcutKeyDisplayString="Alt+W" });
             menu.DropDownItems.Add(new ToolStripMenuItem("Duplicate selection",Brand.Duplicate,delegate { RunOperation("duplicate"); }) { ShortcutKeyDisplayString="Alt+Q" });
+            menu.DropDownItems.Add(new ToolStripMenuItem("Data container before selection",null,delegate { RunOperation("before"); }) { ShortcutKeyDisplayString="Alt+A" });
+            menu.DropDownItems.Add(new ToolStripMenuItem("Data container after selection",null,delegate { RunOperation("after"); }) { ShortcutKeyDisplayString="Alt+D" });
+            menu.DropDownItems.Add(new ToolStripMenuItem("Add overlapping objects to group",null,delegate { RunOperation("absorb"); }) { ShortcutKeyDisplayString="Alt+G" });
             menu.DropDownItems.Add(new ToolStripSeparator());
             menu.DropDownItems.Add("About / Help", null, delegate {
                 MessageBox.Show(host, "Polymita 0.7.0 · Rhino 8 / Windows\n\n" +
@@ -336,7 +344,10 @@ namespace WireShelf
             var isClick = ShelfRuntime.Distance(origin, e.ControlLocation) < 6;
             if (firstRelease && isClick) { firstRelease = false; return GH_ObjectResponse.Ignore; }
             firstRelease = false;
-            if (document.FindAttribute(e.CanvasLocation, true) != null) return base.RespondToMouseUp(sender, e);
+            // A group counts as an attribute under the cursor, so releasing a wire onto
+            // one used to fall through to native behaviour and never open the palette.
+            var under = document.FindAttribute(e.CanvasLocation, true);
+            if (under != null && !(under.DocObject is GH_Group)) return base.RespondToMouseUp(sender, e);
             var screen = sender.PointToScreen(e.ControlLocation); var position = e.CanvasLocation;
             sender.BeginInvoke(new Action(delegate {
                 if (!sender.IsDisposed && sender.Document == document) ShelfRuntime.ShowPalette(sender, source, fromInput, position, screen);

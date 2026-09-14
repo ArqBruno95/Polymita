@@ -41,6 +41,8 @@ namespace WireShelf
         }
         internal static void Safe(Action action)
         { try { action(); } catch (Exception ex) { Error(ex); } }
+        internal static bool Try(Action action)
+        { try { action(); return true; } catch (Exception ex) { Error(ex); return false; } }
         internal static void Error(Exception ex)
         { MessageBox.Show(Grasshopper.Instances.DocumentEditor, ex.Message, "Polymita", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
         internal static string Ask(IWin32Window owner, string title, string value, int maxLength)

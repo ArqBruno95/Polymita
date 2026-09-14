@@ -12,7 +12,7 @@ namespace WireShelf {
   // dropped only when something that changes a measurement changes.
   readonly Dictionary<string,SizeF> measured=new Dictionary<string,SizeF>();
   Font italic,large; string sourceName; float sourceSize=-1,largeSize=-1,zoom=-1,scale=-1; FontStyle sourceStyle;
-  internal CanvasLabels(GH_Canvas canvas,ToolboxSettings settings) { this.canvas=canvas;this.settings=settings;canvas.CanvasPostPaintObjects+=Paint; }
+  internal CanvasLabels(GH_Canvas canvas,ToolboxSettings settings) { this.canvas=canvas;this.settings=settings;canvas.CanvasPrePaintObjects+=Paint; }
   // Compared by value: whether GH_FontServer hands back the same instance is its own business.
   Font Italic(Graphics g) {
    var current=GH_FontServer.StandardAdjusted;
@@ -76,7 +76,7 @@ namespace WireShelf {
    }
   }
   public void Dispose() {
-   canvas.CanvasPostPaintObjects-=Paint;
+   canvas.CanvasPrePaintObjects-=Paint;
    if(italic!=null){italic.Dispose();italic=null;}
    if(large!=null){large.Dispose();large=null;}
    if(!canvas.IsDisposed)canvas.Invalidate();

@@ -4,6 +4,20 @@ A toolbox for clear, fast work in **Grasshopper for Rhino 8 on Windows**.
 
 Polymita is the scientific name used internationally for Cuba's painted snails. The identity uses a geometric spiral shell, shell yellow, coral, cream and dark ink. English common name: **Cuban painted snail**. [Natural-history reference](https://www.amnh.org/explore/news-blogs/cuba-painted-snails).
 
+## Changes in 0.8.0
+
+- **Adaptive wires are filleted.** The two corners are rounded. When the input sits left of the output the stub is a short fixed length, which turns the wire into a straight run with a tight rounded hook at each end.
+- **Alt+A / Alt+D** insert a generic **Data** container before or after the selection. Each existing wire on that side gets its own container spliced into it, the way a relay sits in a wire; a port with no wire gets a container joined to it. Containers are drawn as their name rather than their icon.
+- **Alt+G** adds to each selected group every object whose area overlaps it.
+- **Double-click a relay** to dissolve it and reconnect both ends.
+- **Shift** while dragging constrains the move to horizontal or vertical. **Alt** while dragging leaves a copy behind and drags the copy.
+- Snapping now also aligns the moving centre with the grips of components the selection is wired to. Guides are coloured: green for an edge, red for a centre axis, blue for a connected port.
+- **Alt+Q** places the copy immediately beside the original rather than hunting for clear space beyond every obstacle.
+- Component captions are on by default and are painted behind objects, so an overlapping component stays readable.
+- Favorites inserted from the palette turn on Grasshopper's full port names.
+- The library editor shows each favorite's component icon beside its name.
+- Releasing a dragged wire over a group opens the palette, as releasing over bare canvas already did.
+
 ## Changes in 0.7.0
 
 - **Cut wires:** hold Ctrl, press the left mouse button on canvas background, and sweep across connected wires. Only Ctrl and the left button are needed, and the stroke continues for as long as that button is held, whether or not Ctrl stays down. The swept path is drawn on the canvas while the stroke is live. Release the button to finish. A single Undo restores the whole stroke, including input source order. Escape cancels the stroke. Hidden wires are preserved. Ctrl-click on a component retains native multiselection.

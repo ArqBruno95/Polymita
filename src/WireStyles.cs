@@ -20,24 +20,55 @@ namespace WireShelf
         public static int Variant;
 
         // Horizontal departure and arrival; the middle segment adapts to both grips.
+        // Reaching backwards the stub is a short fixed length rather than a share of the
+        // span: a proportional one grows with the distance and turns the rounded hook
+        // into a long thin spike, instead of the tight turn a relay wire makes.
         private static float Lead(PointF output, PointF input)
         {
             var dx = input.X-output.X;
-            return dx > 0 ? dx * 0.28F : Math.Max(24, Math.Abs(dx) * 0.28F);
+            return dx > 0 ? dx * 0.28F : 26F;
+        }
+        // Radius of the rounded corners on the adaptive wire, in canvas units.
+        public static float Fillet = 11F;
+        // The corners the wire turns through, ends included. Both variants leave and
+        // arrive horizontally; when the input sits left of the output the lead pushes
+        // outwards, which is what turns the adaptive wire into a straight run with a
+        // rounded hook at each end.
+        public static PointF[] Corners(PointF output, PointF input)
+        {
+            if (Variant == 0) return new[] { output, new PointF(input.X, output.Y), input };
+            var lead = Lead(output, input);
+            return new[] { output, new PointF(output.X+lead,output.Y), new PointF(input.X-lead,input.Y), input };
+        }
+        private static PointF Toward(PointF from, PointF to, float distance)
+        {
+            var dx = to.X - from.X; var dy = to.Y - from.Y;
+            var length = (float)Math.Sqrt(dx*dx + dy*dy);
+            if (length <= 0.0001F) return from;
+            var step = Math.Min(distance, length * 0.45F);
+            return new PointF(from.X + dx/length*step, from.Y + dy/length*step);
         }
         public static GraphicsPath Polyline(PointF output, PointF input)
         {
             var path = new GraphicsPath();
-            if (Variant == 0)
+            var corners = Corners(output, input);
+            if (Variant == 0) { path.AddLines(corners); return path; }
+            var cursor = corners[0];
+            for (var i = 1; i < corners.Length-1; i++)
             {
-                path.AddLines(new[] { output, new PointF(input.X, output.Y), input });
+                var enter = Toward(corners[i], cursor, Fillet);
+                var leave = Toward(corners[i], corners[i+1], Fillet);
+                path.AddLine(cursor, enter);
+                // A quadratic through the corner, written as a cubic. It meets both
+                // segments tangentially like a fillet and stays valid however short
+                // the adjoining segments get, which an arc of fixed radius does not.
+                path.AddBezier(enter,
+                    new PointF(enter.X + (corners[i].X-enter.X)*2F/3F, enter.Y + (corners[i].Y-enter.Y)*2F/3F),
+                    new PointF(leave.X + (corners[i].X-leave.X)*2F/3F, leave.Y + (corners[i].Y-leave.Y)*2F/3F),
+                    leave);
+                cursor = leave;
             }
-            else
-            {
-                var lead = Lead(output, input);
-                path.AddLines(new[] { output, new PointF(output.X+lead,output.Y),
-                    new PointF(input.X-lead,input.Y), input });
-            }
+            path.AddLine(cursor, corners[corners.Length-1]);
             return path;
         }
 

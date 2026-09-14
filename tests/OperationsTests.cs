@@ -54,12 +54,55 @@ public static class OperationsTests {
     Check(ci.Colour.ToArgb()==inner.Colour.ToArgb(),"Group color preserved");
     Check(clones.All(o=>o.Attributes.Selected) && !a.Attributes.Selected,"Only copies are selected");
     Check(ca.Attributes.Pivot.X>a.Attributes.Pivot.X && ca.Attributes.Pivot.Y==a.Attributes.Pivot.Y,"Copies keep vertical position and move right");
-    Check(clones.All(o=>originalBounds.All(r=>!r.IntersectsWith(o.Attributes.Bounds))),"Copy does not overlap any existing bounds");
+    Check(ca.Attributes.Pivot.X<obstacle.Attributes.Pivot.X,"Copy lands beside the original instead of past every obstacle");
     var cloneIds=clones.Select(o=>o.InstanceGuid).ToArray();
     doc.Undo(); Check(doc.Objects.Count==6 && cloneIds.All(id=>doc.FindObject(id,false)==null),"One Undo removes entire duplicate");
     doc.Redo(); Check(doc.Objects.Count==10 && cloneIds.All(id=>doc.FindObject(id,false)!=null),"Redo restores entire duplicate");
     cb=(Param_GenericObject)doc.FindObject(cb.InstanceGuid,false);
     Check(cb.SourceCount==2 && cb.Sources.Contains(external),"Redo preserves internal and external input wires");
+   }
+   using(var doc=new GH_Document()) {
+    canvas.Document=doc;
+    var feed=Add(doc,new Param_Number(),100,100);
+    var sink=Add(doc,new Param_Number(),500,100); sink.AddSource(feed);
+    doc.DeselectAll(); sink.Attributes.Selected=true;
+    var made=CanvasOperations.Containers(doc,true);
+    var box=(IGH_Param)made[0];
+    Check(made.Count==1,"One container per incoming wire");
+    Check(box.Sources.Contains(feed) && sink.Sources.Contains(box) && !sink.Sources.Contains(feed),"Container is spliced into the wire");
+    Check(box.IconDisplayMode==GH_IconDisplayMode.name,"Container is drawn as its name, not its icon");
+    Check(box.Attributes.Bounds.Left>feed.Attributes.Bounds.Left && box.Attributes.Bounds.Right<sink.Attributes.Bounds.Right,"Container sits between the two ends");
+    doc.Undo();
+    Check(sink.Sources.Contains(feed) && doc.FindObject(box.InstanceGuid,false)==null,"Container insertion has one-step Undo");
+    doc.DeselectAll(); sink.Attributes.Selected=true;
+    var after=CanvasOperations.Containers(doc,false);
+    var tail=(IGH_Param)after[0];
+    Check(after.Count==1 && tail.Sources.Contains(sink),"A free port gets a container on its own wire");
+    Check(tail.Attributes.Bounds.Left>sink.Attributes.Bounds.Left,"The trailing container is placed to the right");
+    doc.Undo();
+   }
+   using(var doc=new GH_Document()) {
+    canvas.Document=doc;
+    var feed=Add(doc,new Param_Number(),100,100);
+    var sink=Add(doc,new Param_Number(),600,100);
+    var relay=Add(doc,new GH_Relay(),350,100);
+    relay.AddSource(feed); sink.AddSource(relay);
+    CanvasOperations.DissolveRelay(doc,relay);
+    Check(sink.Sources.Contains(feed) && doc.FindObject(relay.InstanceGuid,false)==null,"Dissolving a relay reconnects both ends");
+    doc.Undo();
+    Check(doc.FindObject(relay.InstanceGuid,false)!=null && !sink.Sources.Contains(feed),"Relay dissolve has one-step Undo");
+   }
+   using(var doc=new GH_Document()) {
+    canvas.Document=doc;
+    var inside=Add(doc,new Param_Number(),120,120);
+    var outside=Add(doc,new Param_Number(),900,900);
+    var group=Add(doc,new GH_Group(),0,0); group.AddObject(inside.InstanceGuid);
+    foreach(var o in doc.Objects) { o.Attributes.ExpireLayout(); o.Attributes.PerformLayout(); }
+    var overlapping=Add(doc,new Param_Number(),140,130);
+    foreach(var o in doc.Objects) { o.Attributes.ExpireLayout(); o.Attributes.PerformLayout(); }
+    doc.DeselectAll(); group.Attributes.Selected=true;
+    Check(CanvasOperations.Absorb(doc)==1,"Only the overlapping object joins the group");
+    Check(group.ObjectIDs.Contains(overlapping.InstanceGuid) && !group.ObjectIDs.Contains(outside.InstanceGuid),"Group absorbs by overlap, not by distance");
    }
    var lib=new ShelfLibrary(); var section=new ShelfSection(); lib.Sections.Add(section); section.Items.Add(new ShelfItem { ActionId="duplicate",Name="Copy" });
    Check(LibraryStore.Copy(lib).Sections[0].Items[0].ActionId=="duplicate","Operation favorite round-trip");

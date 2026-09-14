@@ -1,6 +1,7 @@
 using Grasshopper;
 using Grasshopper.Kernel;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -11,6 +12,9 @@ namespace WireShelf
     {
         private ShelfLibrary draft;
         private readonly TreeView tree = new TreeView();
+        // Keyed by the image list index so a component resolves once per editor.
+        private readonly ImageList thumbnails = new ImageList { ImageSize = new Size(20,20), ColorDepth = ColorDepth.Depth32Bit };
+        private readonly Dictionary<Guid,int> thumbnailIndex = new Dictionary<Guid,int>();
         private readonly Label details = new Label();
         private bool dirty;
         internal Editor(ShelfItem captured = null)
@@ -30,6 +34,7 @@ namespace WireShelf
                 Ui.Button("+ Operation", AddOperation), Ui.Button("Capture selection", CaptureSelected), Ui.Button("Rename", Rename),
                 Ui.Button("↑", () => MoveItem(-1)), Ui.Button("↓", () => MoveItem(1)), Ui.Button("Move to…", MoveTo), Ui.Button("Delete", Delete));
             tree.Dock = DockStyle.Fill; tree.HideSelection = false; tree.FullRowSelect = true; tree.ItemHeight = 30;
+            tree.ImageList = thumbnails;
             tree.BorderStyle = BorderStyle.FixedSingle; tree.AccessibleName = "Sections and favorites, in display order";
             tree.AfterSelect += delegate { ShowDetails(); };
             // EditItem instantiates the favorite to list its ports, which throws when the
@@ -52,6 +57,7 @@ namespace WireShelf
                 if (result == DialogResult.Cancel) e.Cancel = true;
                 else if (result == DialogResult.Yes) try { Save(); } catch (Exception ex) { Ui.Error(ex); e.Cancel = true; }
             };
+            FormClosed += delegate { thumbnails.Dispose(); };
             RefreshTree(null);
             if (captured != null) AddItem(captured);
         }
@@ -76,12 +82,34 @@ namespace WireShelf
                 foreach (var item in s.Items)
                 {
                     var node = new TreeNode(item.Name + (item.IsRecipe ? "   · recipe" : "")) { Tag = item };
+                    var image = Thumbnail(item);
+                    node.ImageIndex = node.SelectedImageIndex = image;
                     group.Nodes.Add(node); if (ReferenceEquals(selection, item)) tree.SelectedNode = node;
                 }
                 group.Expand();
             }
             tree.EndUpdate(); if (tree.SelectedNode == null && tree.Nodes.Count > 0) tree.SelectedNode = tree.Nodes[0];
             ShowDetails();
+        }
+        // -1 leaves the row without an image, which is what a section heading wants.
+        private int Thumbnail(ShelfItem item)
+        {
+            if (item.IsAction)
+            {
+                var key = item.ActionId == "connect" ? new Guid("00000000-0000-0000-0000-0000000000c0")
+                    : new Guid("00000000-0000-0000-0000-0000000000d0");
+                return Register(key, item.ActionId == "connect" ? Brand.Connect : Brand.Duplicate);
+            }
+            var proxy = Instances.ComponentServer.EmitObjectProxy(item.ComponentId);
+            return Register(item.ComponentId, proxy == null ? null : proxy.Icon);
+        }
+        private int Register(Guid key, Image icon)
+        {
+            int index;
+            if (thumbnailIndex.TryGetValue(key, out index)) return index;
+            if (icon == null) { thumbnailIndex[key] = -1; return -1; }
+            thumbnails.Images.Add(icon);
+            index = thumbnails.Images.Count - 1; thumbnailIndex[key] = index; return index;
         }
         private void ShowDetails()
         {

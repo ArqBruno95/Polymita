@@ -17,7 +17,8 @@ namespace WireShelf
         [DataMember] public Guid DisplayMode;
         [DataMember] public int WireVariant;
         [DataMember] public float WireAngle = 45;
-        [DataMember] public bool ComponentNames;
+        [DataMember] public bool ComponentNames = true;
+        [DataMember] public int LabelsRevision;
         [DataMember] public bool GroupNames;
         [DataMember] public bool Nicknames;
         [DataMember] public float ComponentTextSize = 12;
@@ -29,7 +30,7 @@ namespace WireShelf
         // initializers, so settings files written before these members existed
         // would silently deserialize both gestures as disabled.
         [OnDeserializing] private void Defaults(StreamingContext context)
-        { CutWires = true; SnapAlign = true; }
+        { CutWires = true; SnapAlign = true; ComponentNames = true; }
         public static ToolboxSettings Load(string path)
         {
             if (!File.Exists(path)) return new ToolboxSettings();

@@ -52,11 +52,12 @@ namespace WireShelf
                 try {
                     var canvas = Instances.ActiveCanvas;
                     var operationKey=(Keys)keyValue.ToInt32(); var operationFlags=state.ToInt64();
-                    if((operationKey==Keys.W || operationKey==Keys.Q) && (Control.ModifierKeys & Keys.Alt)!=0 && InCanvas(canvas,true)) {
+                    var operation=Operation(operationKey);
+                    if(operation!=null && (Control.ModifierKeys & Keys.Alt)!=0 && InCanvas(canvas,true)) {
                         tap.Reset();
                         if((operationFlags & ((1L<<31)|(1L<<30)))==0) {
-                            var current=canvas.Document; var action=operationKey==Keys.W?"connect":"duplicate";
-                            canvas.BeginInvoke(new Action(delegate { if(!canvas.IsDisposed && canvas.Document==current) ShelfRuntime.RunOperation(action); }));
+                            var current=canvas.Document;
+                            canvas.BeginInvoke(new Action(delegate { if(!canvas.IsDisposed && canvas.Document==current) ShelfRuntime.RunOperation(operation); }));
                         }
                         return new IntPtr(1);
                     }
@@ -78,6 +79,18 @@ namespace WireShelf
                 } catch { tap.Reset(); } // Never propagate an exception through a native hook.
             }
             return CallNextHookEx(hook, code, keyValue, state);
+        }
+        // Swallowed here so Grasshopper never sees the Alt accelerator.
+        private static string Operation(Keys key)
+        {
+            switch(key) {
+                case Keys.W: return "connect";
+                case Keys.Q: return "duplicate";
+                case Keys.A: return "before";
+                case Keys.D: return "after";
+                case Keys.G: return "absorb";
+                default: return null;
+            }
         }
         private void OnExit(object sender, EventArgs e) { Dispose(); }
         public void Dispose()

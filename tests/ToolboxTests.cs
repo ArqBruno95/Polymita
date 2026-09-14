@@ -58,11 +58,15 @@ public static class ToolboxTests
         Check(WireStyles.DistanceToPolyline(new PointF(100,0), new PointF(0,0), new PointF(50,0)) == 0, "Hit testing follows backwards aligned wire");
         WireStyles.Variant=1;
         foreach(var end in new[] { new PointF(300,100),new PointF(300,-100),new PointF(-100,80),new PointF(0,100),new PointF(300,0),PointF.Empty }) {
+            var k=WireStyles.Corners(PointF.Empty,end);
+            Check(k.Length==4 && k[0]==PointF.Empty && k[3]==end && k[0].Y==k[1].Y && k[2].Y==k[3].Y,"Adaptive corners and horizontal ends");
+            Check(end.X>0 || Math.Abs(k[1].X-k[0].X-26F)<0.001,"Backwards wire uses a short fixed stub");
+            Check(WireStyles.DistanceToPolyline(k[0],k[3],new PointF((k[1].X+k[2].X)/2,(k[1].Y+k[2].Y)/2))<0.01,"Adaptive diagonal hit test");
             using(var p=WireStyles.Polyline(PointF.Empty,end)) {
-                Check(p.PointCount==4 && p.PathTypes.All(t=>t<=1),"Adaptive wire has three straight segments");
-                var a=p.PathPoints[0]; var b=p.PathPoints[1]; var c=p.PathPoints[2]; var d=p.PathPoints[3];
-                Check(a==PointF.Empty && d==end && a.Y==b.Y && c.Y==d.Y,"Adaptive endpoints and horizontal ends");
-                Check(WireStyles.DistanceToPolyline(a,d,new PointF((b.X+c.X)/2,(b.Y+c.Y)/2))<0.01,"Adaptive diagonal hit test");
+                var pts=p.PathPoints;
+                Check(pts[0]==PointF.Empty && pts[pts.Length-1]==end,"Filleted wire still meets both grips");
+                Check(pts[1].Y==pts[0].Y && pts[pts.Length-2].Y==pts[pts.Length-1].Y,"Filleted wire leaves and arrives horizontally");
+                Check(p.PathTypes.Any(t=>(t&7)==3),"Adaptive corners are filleted");
             }
         }
         var library=new ShelfLibrary(); var section=new ShelfSection { Title="Planos" }; library.Sections.Add(section);
