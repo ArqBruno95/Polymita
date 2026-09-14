@@ -6,9 +6,9 @@ Polymita is the scientific name used internationally for Cuba's painted snails. 
 
 ## Changes in 0.7.0
 
-- **Cut wires:** hold Ctrl, press the left mouse button on canvas background, and sweep across connected wires. Release to finish. A single Undo restores the whole stroke, including input source order. Escape cancels the stroke. Hidden wires are preserved. Ctrl-click on a component retains native multiselection.
-- **Align while dragging:** components and complete groups snap to nearby edges and centers with horizontal/vertical guides. The selection moves together; nested group contents retain their relative positions. The snap radius is 8 screen pixels at any zoom. Undo/Redo restores the whole move; Escape cancels.
-- The Polymita menu has **Cut wires · Ctrl + left drag** and **Snap to edges and centers** switches. Both start enabled; switches apply for the current session. Selection containing sketches or other non-component objects keeps native dragging.
+- **Cut wires:** hold Ctrl, press the left mouse button on canvas background, and sweep across connected wires. The swept path is drawn on the canvas while the stroke is live. Release to finish. A single Undo restores the whole stroke, including input source order. Escape cancels the stroke. Hidden wires are preserved. Ctrl-click on a component retains native multiselection.
+- **Align while dragging:** components and complete groups snap to nearby edges and centers with horizontal/vertical guides. The selection moves together; nested group contents retain their relative positions. The snap radius is 8 screen pixels at any zoom. Hold **Alt** during the drag to suspend snapping. Undo/Redo restores the whole move; Escape cancels.
+- The Polymita menu has **Cut wires · Ctrl + left drag** and **Snap to edges and centers · hold Alt to suspend** switches. Both start enabled and are stored in `toolbox.json`, so they survive a restart. Selection containing sketches or other non-component objects keeps native dragging.
 
 ## Changes in 0.6.0
 
@@ -60,7 +60,7 @@ This prototype is tested in Rhino 8.34, Windows, .NET 8.0.14. Not all third-part
 
 ## Build and license
 
-Run `build.ps1` with Rhino 8 installed to produce `Polymita.gha`. The script uses Windows' .NET Framework compiler and local Rhino references. `WireShelf.csproj` can also build with the .NET 4.8 targeting pack. Run `tests/run-core.ps1` and `tests/run-toolbox.ps1`; native integration tests require Rhino.
+Run `build.ps1` with Rhino 8 installed to produce `Polymita.gha`. The script uses Windows' .NET Framework compiler and local Rhino references. `WireShelf.csproj` can also build with the .NET 4.8 targeting pack. Run `tests/run-core.ps1` and `tests/run-toolbox.ps1`. `tests/run-gestures.ps1` builds the canvas-gesture suite, which is then executed with `tests/run-gestures.py` from Rhino's RunPythonScript. Native integration tests require Rhino.
 
 GPL-3.0-or-later. Source and license texts are included. See `THIRD_PARTY_NOTICES.md` for QuickConnection, WiresRenderer, Sunglasses, Harmony and McNeel attribution.
 

@@ -60,6 +60,16 @@ public static class CoreTests
             Check(grid.Cells.All(c => c.Bounds.Left >= 0 && c.Bounds.Top >= 0 && c.Bounds.Right <= grid.Size.Width && c.Bounds.Bottom <= grid.Size.Height), "grid contains every icon");
             Check(!grid.Cells.SelectMany((c, i) => grid.Cells.Skip(i + 1).Where(other => c.Bounds.IntersectsWith(other.Bounds))).Any(), "icon hit targets never overlap");
             Check(!grid.Cells.Any(c => grid.Headings.Any(h => c.Bounds.IntersectsWith(h.Bounds))), "section headings never overlap icons");
+            var settingsPath = Path.Combine(folder, "toolbox.json");
+            var settings = new ToolboxSettings();
+            Check(settings.CutWires && settings.SnapAlign, "cut and snap gestures are enabled by default");
+            settings.CutWires = false; settings.Save(settingsPath);
+            var reloaded = ToolboxSettings.Load(settingsPath);
+            Check(!reloaded.CutWires && reloaded.SnapAlign, "gesture switches survive a restart");
+            File.WriteAllText(settingsPath, "{\"PanelWidth\":420,\"View\":\"Top\"}");
+            var legacy = ToolboxSettings.Load(settingsPath);
+            Check(legacy.CutWires && legacy.SnapAlign, "settings written before the gestures existed keep both enabled");
+            Check(legacy.View == "Top", "legacy settings keep their stored values");
             Console.WriteLine(count + " core checks passed."); return 0;
         }
         catch (Exception ex) { Console.Error.WriteLine(ex); return 1; }

@@ -51,12 +51,16 @@ public static class GestureTests
                 var cut=new CutInteraction(canvas,E(300,0));
                 cut.Sweep(new PointF(300,300));
                 Check(target.SourceCount==0,"One sweep cuts multiple wires");
+                Check(cut.Stroke.Count==2 && cut.Stroke[0]==new PointF(300,0) && cut.Stroke[1]==new PointF(300,300),"Sweep records the stroke drawn on the canvas");
+                cut.Sweep(new PointF(300,300));
+                Check(cut.Stroke.Count==2,"A repeated sample does not grow the stroke");
                 cut.RespondToMouseUp(canvas,E(300,300));cut.Destroy();
                 doc.Undo();Check(target.Sources.SequenceEqual(new[]{a,b}),"Undo restores wires and source order");
                 doc.Redo();Check(target.SourceCount==0,"Redo removes both wires");
                 doc.Undo();
                 cut=new CutInteraction(canvas,E(300,0));cut.Sweep(new PointF(300,300));cut.Destroy();
                 Check(target.Sources.SequenceEqual(new[]{a,b}),"Cancelled cut restores source order");
+                Check(cut.Stroke.Count==0,"Ending a stroke clears its feedback");
                 foreach(var variant in new[]{0,1}) {
                     WireStyles.Variant=variant;WireStyles.SetPolylines(true);
                     cut=new CutInteraction(canvas,E(300,0));cut.Sweep(new PointF(300,300));

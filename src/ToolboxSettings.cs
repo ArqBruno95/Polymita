@@ -23,6 +23,13 @@ namespace WireShelf
         [DataMember] public float ComponentTextSize = 12;
         [DataMember] public float GroupTextSize = 26;
         [DataMember] public float GroupZoom = 0.65F;
+        [DataMember] public bool CutWires = true;
+        [DataMember] public bool SnapAlign = true;
+        // DataContractJsonSerializer builds the instance without running field
+        // initializers, so settings files written before these members existed
+        // would silently deserialize both gestures as disabled.
+        [OnDeserializing] private void Defaults(StreamingContext context)
+        { CutWires = true; SnapAlign = true; }
         public static ToolboxSettings Load(string path)
         {
             if (!File.Exists(path)) return new ToolboxSettings();

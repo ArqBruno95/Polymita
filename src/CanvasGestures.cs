@@ -93,10 +93,27 @@ namespace WireShelf
         readonly GH_Document doc;
         readonly Dictionary<IGH_Param, IGH_Param[]> originals = new Dictionary<IGH_Param, IGH_Param[]>();
         readonly GH_UndoRecord undo = new GH_UndoRecord("Polymita: cut wires");
+        readonly List<PointF> stroke = new List<PointF>();
         PointF previous;
         bool finished;
         internal CutInteraction(GH_Canvas canvas, GH_CanvasMouseEvent e) : base(canvas,e)
-        { m_active=true; doc=canvas.Document; previous=e.CanvasLocation; canvas.Capture=true; canvas.Cursor=Cursors.Cross; }
+        {
+            m_active=true; doc=canvas.Document; previous=e.CanvasLocation; stroke.Add(previous);
+            canvas.CanvasPostPaintObjects+=Paint; canvas.Capture=true; canvas.Cursor=Cursors.Cross;
+        }
+        internal IList<PointF> Stroke { get { return stroke; } }
+        // Cut wires disappear as the stroke advances, so the swept path is the only
+        // remaining evidence of what the gesture reached. Draw it in document
+        // coordinates and scale the pen so it stays two screen pixels at any zoom.
+        void Paint(GH_Canvas sender)
+        {
+            if (stroke.Count < 2) return;
+            using (var pen = new Pen(Ui.Accent, 2F/Math.Max(0.05F,sender.Viewport.Zoom)))
+            {
+                pen.DashStyle=DashStyle.Dash; pen.StartCap=LineCap.Round; pen.EndCap=LineCap.Round;
+                sender.Graphics.DrawLines(pen, stroke.ToArray());
+            }
+        }
         public override GH_ObjectResponse RespondToMouseMove(GH_Canvas sender, GH_CanvasMouseEvent e)
         {
             if (sender.Document != doc) return GH_ObjectResponse.Release;
@@ -114,7 +131,11 @@ namespace WireShelf
                     if (source.Attributes == null || !source.Attributes.HasOutputGrip) continue;
                     using (var path=GH_Painter.ConnectionPath(source.Attributes.OutputGrip,input.Attributes.InputGrip,GH_WireDirection.right,GH_WireDirection.left))
                     {
+                        // A degenerate path exposes no PathPoints; reading them would
+                        // throw out of the mouse loop and into Grasshopper's pump.
+                        if (path==null || path.PointCount==0) continue;
                         path.Flatten(null,0.5F/Math.Max(0.05F,Canvas.Viewport.Zoom));
+                        if (path.PointCount<2) continue;
                         var pts=path.PathPoints; bool hit=false;
                         for (int i=1;i<pts.Length;i++)
                             if (AlignmentGeometry.Crosses(previous,point,pts[i-1],pts[i],tolerance)) { hit=true; break; }
@@ -124,6 +145,7 @@ namespace WireShelf
                     }
                 }
             }
+            if (point!=previous) stroke.Add(point);
             previous=point;
         }
         void Commit()
@@ -146,7 +168,15 @@ namespace WireShelf
         }
         public override void Destroy()
         {
-            if (!finished) foreach (var pair in originals) { pair.Key.RemoveAllSources(); foreach(var source in pair.Value) pair.Key.AddSource(source); }
+            if (!finished && originals.Count>0)
+            {
+                foreach (var pair in originals) { pair.Key.RemoveAllSources(); foreach(var source in pair.Value) pair.Key.AddSource(source); }
+                // Restoring sources expires the recipients. Recompute so a cancelled
+                // stroke does not leave the definition in an expired state.
+                foreach (var input in originals.Keys) input.ExpireSolution(false);
+                doc.NewSolution(false);
+            }
+            stroke.Clear(); Canvas.CanvasPostPaintObjects-=Paint;
             Canvas.Cursor=Cursors.Default; Canvas.Capture=false; Canvas.Invalidate(); base.Destroy();
         }
     }
@@ -188,9 +218,17 @@ namespace WireShelf
             if(sender.Document!=doc) return GH_ObjectResponse.Release;
             var delta=new PointF(e.CanvasX-CanvasPointDown.X,e.CanvasY-CanvasPointDown.Y);
             if(!moved && Math.Abs(delta.X)*sender.Viewport.Zoom<3 && Math.Abs(delta.Y)*sender.Viewport.Zoom<3) return GH_ObjectResponse.Handled;
-            var box=bounds; box.Offset(delta);
-            var snap=AlignmentGeometry.Snap(box,targets,8F/Math.Max(0.05F,sender.Viewport.Zoom),out guideX,out guideY);
-            delta.X+=snap.X; delta.Y+=snap.Y; Position(delta); moved=delta.X!=0 || delta.Y!=0;
+            // Alt suspends alignment for the rest of the stroke. Holding any modifier
+            // before pressing already keeps the native drag; this makes the same
+            // modifier work once the drag is under way.
+            if((Control.ModifierKeys & Keys.Alt)!=0) guideX=guideY=null;
+            else
+            {
+                var box=bounds; box.Offset(delta);
+                var snap=AlignmentGeometry.Snap(box,targets,8F/Math.Max(0.05F,sender.Viewport.Zoom),out guideX,out guideY);
+                delta.X+=snap.X; delta.Y+=snap.Y;
+            }
+            Position(delta); moved=delta.X!=0 || delta.Y!=0;
             sender.Invalidate(); return GH_ObjectResponse.Handled;
         }
         public override GH_ObjectResponse RespondToMouseUp(GH_Canvas sender,GH_CanvasMouseEvent e)

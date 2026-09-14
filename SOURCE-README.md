@@ -16,7 +16,7 @@ The resulting `dist/Polymita.gha` and `dist/runtimes` folder can be copied to `%
 
 ## Tests
 
-Run `./tests/run-core.ps1` and `./tests/run-toolbox.ps1` for the standalone checks. The scripts compile against the installed Rhino 8 SDK. The files named `*preview.py`, `*native*.py`, and `run-gestures.py` are Rhino-side integration helpers and should be run from Rhino's `RunPythonScript` command when testing UI behavior.
+Run `./tests/run-core.ps1` and `./tests/run-toolbox.ps1` for the standalone checks. `./tests/run-gestures.ps1` compiles the canvas-gesture suite into `test-output/Polymita.GestureTest06.dll`, which `tests/run-gestures.py` then executes from Rhino's `RunPythonScript`. The scripts compile against the installed Rhino 8 SDK. The files named `*preview.py`, `*native*.py`, and `run-gestures.py` are Rhino-side integration helpers and should be run from Rhino's `RunPythonScript` command when testing UI behavior.
 
 ## Source layout
 

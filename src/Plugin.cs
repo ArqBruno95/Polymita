@@ -99,6 +99,7 @@ namespace WireShelf
             if (initialized) return; initialized = true; Enabled = true;
             try { toolboxSettings = ToolboxSettings.Load(ToolboxPath); } catch (Exception ex) { toolboxSettings = new ToolboxSettings(); Ui.Error(ex); }
             WireStyles.Variant=toolboxSettings.WireVariant; WireStyles.Angle=toolboxSettings.WireAngle;
+            CanvasGestures.CutEnabled=toolboxSettings.CutWires; CanvasGestures.SnapEnabled=toolboxSettings.SnapAlign;
             Ui.Safe(()=>WireStyles.SetPolylines(toolboxSettings.Polylines));
             WireStyles.SetHighlight(toolboxSettings.Highlight,Color.FromArgb(toolboxSettings.SelectedArgb));
             shiftFilter = new ShiftFilter();
@@ -154,9 +155,13 @@ namespace WireShelf
             active.CheckedChanged += delegate { Enabled = active.Checked; };
             menu.DropDownItems.Add(active);
             var cut = new ToolStripMenuItem("Cut wires · Ctrl + left drag") { Checked=CanvasGestures.CutEnabled, CheckOnClick=true };
-            cut.CheckedChanged += delegate { CanvasGestures.CutEnabled=cut.Checked; }; menu.DropDownItems.Add(cut);
-            var snap = new ToolStripMenuItem("Snap to edges and centers") { Checked=CanvasGestures.SnapEnabled, CheckOnClick=true };
-            snap.CheckedChanged += delegate { CanvasGestures.SnapEnabled=snap.Checked; }; menu.DropDownItems.Add(snap);
+            cut.CheckedChanged += delegate {
+                CanvasGestures.CutEnabled=cut.Checked; toolboxSettings.CutWires=cut.Checked; SaveToolboxSettings();
+            }; menu.DropDownItems.Add(cut);
+            var snap = new ToolStripMenuItem("Snap to edges and centers · hold Alt to suspend") { Checked=CanvasGestures.SnapEnabled, CheckOnClick=true };
+            snap.CheckedChanged += delegate {
+                CanvasGestures.SnapEnabled=snap.Checked; toolboxSettings.SnapAlign=snap.Checked; SaveToolboxSettings();
+            }; menu.DropDownItems.Add(snap);
             menu.DropDownItems.Add(new ToolStripMenuItem("Edit library…", null, delegate { Edit(); })
                 { ShortcutKeys = Keys.Control | Keys.Shift | Keys.B });
             menu.DropDownItems.Add(new ToolStripMenuItem("Save selection as recipe…", null, delegate { Ui.Safe(() => Edit(CaptureSelection())); })
@@ -204,6 +209,8 @@ namespace WireShelf
                 break;
             }
         }
+        internal static void SaveToolboxSettings()
+        { if (toolboxSettings != null) Ui.Safe(delegate { toolboxSettings.Save(ToolboxPath); }); }
         internal static void RefreshToolbar()
         { if(buttons.Count>0 && !buttons[0].IsDisposed) buttons[0].Checked=toolbox!=null && toolbox.ViewportVisible; }
         internal static void RunOperation(string action)
