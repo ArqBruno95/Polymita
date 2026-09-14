@@ -169,19 +169,19 @@ namespace WireShelf
             snap.CheckedChanged += delegate {
                 CanvasGestures.SnapEnabled=snap.Checked; toolboxSettings.SnapAlign=snap.Checked; SaveToolboxSettings();
             }; menu.DropDownItems.Add(snap);
-            menu.DropDownItems.Add(new ToolStripMenuItem("Edit library…", null, delegate { Edit(); })
+            menu.DropDownItems.Add(new ToolStripMenuItem("Edit library…", Brand.Library, delegate { Edit(); })
                 { ShortcutKeys = Keys.Control | Keys.Shift | Keys.B });
             menu.DropDownItems.Add(new ToolStripMenuItem("Save selection as recipe…", null, delegate { Ui.Safe(() => Edit(CaptureSelection())); })
                 { ShortcutKeys = Keys.Control | Keys.Shift | Keys.R });
             menu.DropDownItems.Add(new ToolStripMenuItem("Open favorites here", null, delegate { Ui.Safe(OpenAtCenter); })
                 { ShortcutKeys = Keys.Control | Keys.Space });
             menu.DropDownItems.Add(new ToolStripSeparator());
-            menu.DropDownItems.Add("Rhino viewport", null, delegate { OpenToolbox(0); });
+            menu.DropDownItems.Add("Rhino viewport", Brand.View, delegate { OpenToolbox(0); });
             menu.DropDownItems.Add(new ToolStripMenuItem("Find in definition / Profiler", Brand.Find, delegate { OpenToolbox(1); }) { ShortcutKeys = Keys.Control | Keys.Shift | Keys.F });
-            menu.DropDownItems.Add("Wire style and color", null, delegate { OpenToolbox(2); });
-            menu.DropDownItems.Add("Component and group labels",Brand.Labels,delegate { OpenToolbox(3); });
-            menu.DropDownItems.Add(new ToolStripMenuItem("Connect selection",Brand.Connect,delegate { RunOperation("connect"); }) { ShortcutKeyDisplayString="Alt+W" });
-            menu.DropDownItems.Add(new ToolStripMenuItem("Duplicate selection",Brand.Duplicate,delegate { RunOperation("duplicate"); }) { ShortcutKeyDisplayString="Alt+Q" });
+            menu.DropDownItems.Add("Wire style and color", Brand.Wires, delegate { OpenToolbox(2); });
+            menu.DropDownItems.Add("Component and group labels", null, delegate { OpenToolbox(3); });
+            menu.DropDownItems.Add(new ToolStripMenuItem("Connect selection",null,delegate { RunOperation("connect"); }) { ShortcutKeyDisplayString="Alt+W" });
+            menu.DropDownItems.Add(new ToolStripMenuItem("Duplicate selection",null,delegate { RunOperation("duplicate"); }) { ShortcutKeyDisplayString="Alt+Q" });
             menu.DropDownItems.Add(new ToolStripMenuItem("Data container before selection",null,delegate { RunOperation("before"); }) { ShortcutKeyDisplayString="Alt+A" });
             menu.DropDownItems.Add(new ToolStripMenuItem("Data container after selection",null,delegate { RunOperation("after"); }) { ShortcutKeyDisplayString="Alt+D" });
             menu.DropDownItems.Add(new ToolStripMenuItem("Add overlapping objects to group",null,delegate { RunOperation("absorb"); }) { ShortcutKeyDisplayString="Alt+G" });

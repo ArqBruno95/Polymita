@@ -10,20 +10,20 @@ namespace WireShelf
 {
     public static class Insertion
     {
-        // Grasshopper keeps full port names as one canvas-wide display setting, so a
-        // favorite cannot carry it on its own. Setting the flag is not enough either:
-        // laid-out capsules keep the caption widths they were built with, so every
-        // object has to be told to lay itself out again.
-        public static void FullNames(GH_Document document)
+        // A capsule draws each port's nickname, and only swaps to the full name when the
+        // machine-wide Draw Full Names setting is on. Toggling that setting from here
+        // changed every other object on the canvas and still did not repaint reliably,
+        // so instead each inserted port is named after itself: the full name shows
+        // whichever way the setting is left, and nothing else on the canvas moves.
+        public static void FullPortNames(IGH_DocumentObject obj)
         {
-            if (!Grasshopper.CentralSettings.CanvasFullNames)
-            {
-                Grasshopper.CentralSettings.CanvasFullNames = true;
-                if (document != null)
-                    foreach (var existing in document.Objects)
-                        if (existing.Attributes != null) { existing.Attributes.ExpireLayout(); existing.Attributes.PerformLayout(); }
-                if (Grasshopper.Instances.ActiveCanvas != null) Grasshopper.Instances.ActiveCanvas.Invalidate();
-            }
+            var component = obj as IGH_Component;
+            if (component == null) return;
+            foreach (var port in component.Params.Input)
+                if (!String.IsNullOrEmpty(port.Name)) port.NickName = port.Name;
+            foreach (var port in component.Params.Output)
+                if (!String.IsNullOrEmpty(port.Name)) port.NickName = port.Name;
+            obj.Attributes.ExpireLayout(); obj.Attributes.PerformLayout();
         }
         public static IGH_DocumentObject Insert(GH_Document document, ShelfItem item, PointF position,
             IGH_Param anchor, bool fromInput, int portIndex)
@@ -31,8 +31,8 @@ namespace WireShelf
             if (document == null) throw new InvalidOperationException("Open a Grasshopper definition.");
             if (anchor != null && !document.Objects.Contains(anchor.Attributes.GetTopLevel.DocObject))
                 throw new InvalidOperationException("The source component is no longer in this definition.");
-            FullNames(document);
             var obj = Recipes.Create(item);
+            FullPortNames(obj);
             var ports = Recipes.Ports(obj, fromInput);
             if (anchor != null && (portIndex < 0 || portIndex >= ports.Count))
                 throw new InvalidOperationException("This favorite has no such port. Choose another port or insert without a wire.");

@@ -116,6 +116,13 @@ public static class OperationsTests {
     Check(group.ObjectIDs.Contains(overlapping.InstanceGuid) && !group.ObjectIDs.Contains(outside.InstanceGuid),"Group absorbs by overlap, not by distance");
     Check(CanvasOperations.Absorb(doc)==0,"Absorbing twice adds nothing further");
    }
+   var graft=Instances.ComponentServer.ObjectProxies.FirstOrDefault(p=>!p.Obsolete && p.Desc.Name=="Graft Tree");
+   Check(graft!=null,"Graft Tree is installed to test port naming against");
+   var sample=(IGH_Component)graft.CreateInstance(); sample.CreateAttributes();
+   var abbreviated=sample.Params.Input.Concat(sample.Params.Output).Any(p=>p.NickName!=p.Name);
+   Check(abbreviated,"A fresh component starts with abbreviated port nicknames");
+   Insertion.FullPortNames(sample);
+   Check(sample.Params.Input.Concat(sample.Params.Output).All(p=>p.NickName==p.Name),"Inserted favorites carry full port names");
    var lib=new ShelfLibrary(); var section=new ShelfSection(); lib.Sections.Add(section); section.Items.Add(new ShelfItem { ActionId="duplicate",Name="Copy" });
    Check(LibraryStore.Copy(lib).Sections[0].Items[0].ActionId=="duplicate","Operation favorite round-trip");
    section.Items[0].ActionId="bad"; bool invalid=false; try { LibraryStore.Encode(lib); } catch(InvalidDataException) { invalid=true; }

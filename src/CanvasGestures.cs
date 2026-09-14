@@ -18,13 +18,19 @@ namespace WireShelf
     {
         // What produced a guide, which is also how it is coloured on the canvas.
         public const int None = 0, Edge = 1, Centre = 2, Port = 3;
-        private static void Consider(float value, float reference, int kind,
+        // How much further than the plain tolerance a port may pull the moving centre
+        // along the horizontal axis.
+        public const float PortReach = 4F;
+        // Candidates are scored as a fraction of their own reach, so a reference with a
+        // wider window competes fairly rather than simply overruling a closer one.
+        private static void Consider(float value, float reference, int kind, float reach,
             ref float best, ref float delta, ref float? guide, ref int bestKind)
         {
             var gap = reference - value; if (gap < 0) gap = -gap;
+            var score = gap / reach;
             // Negated rather than >=, so a NaN bound is skipped exactly as Math.Abs was.
-            if (!(gap < best)) return;
-            best = gap; delta = reference - value; guide = reference; bestKind = kind;
+            if (!(score < best)) return;
+            best = score; delta = reference - value; guide = reference; bestKind = kind;
         }
         public static PointF Snap(RectangleF moving, IEnumerable<RectangleF> targets, float tolerance,
             out float? guideX, out float? guideY)
@@ -36,7 +42,7 @@ namespace WireShelf
             float tolerance, out float? guideX, out float? guideY, out int kindX, out int kindY)
         {
             guideX = guideY = null; kindX = kindY = None;
-            float dx = 0, dy = 0, bestX = tolerance, bestY = tolerance;
+            float dx = 0, dy = 0, bestX = 1F, bestY = 1F;
             float x0 = moving.Left, x1 = moving.Left + moving.Width / 2, x2 = moving.Right;
             float y0 = moving.Top, y1 = moving.Top + moving.Height / 2, y2 = moving.Bottom;
             foreach (var target in targets)
@@ -44,21 +50,23 @@ namespace WireShelf
                 // Centre against centre is the one pairing that marks a shared axis;
                 // everything else lines an edge up with something.
                 float tx0 = target.Left, tx1 = target.Left + target.Width / 2, tx2 = target.Right;
-                Consider(x0, tx0, Edge, ref bestX, ref dx, ref guideX, ref kindX); Consider(x0, tx1, Edge, ref bestX, ref dx, ref guideX, ref kindX); Consider(x0, tx2, Edge, ref bestX, ref dx, ref guideX, ref kindX);
-                Consider(x1, tx0, Edge, ref bestX, ref dx, ref guideX, ref kindX); Consider(x1, tx1, Centre, ref bestX, ref dx, ref guideX, ref kindX); Consider(x1, tx2, Edge, ref bestX, ref dx, ref guideX, ref kindX);
-                Consider(x2, tx0, Edge, ref bestX, ref dx, ref guideX, ref kindX); Consider(x2, tx1, Edge, ref bestX, ref dx, ref guideX, ref kindX); Consider(x2, tx2, Edge, ref bestX, ref dx, ref guideX, ref kindX);
+                Consider(x0, tx0, Edge, tolerance, ref bestX, ref dx, ref guideX, ref kindX); Consider(x0, tx1, Edge, tolerance, ref bestX, ref dx, ref guideX, ref kindX); Consider(x0, tx2, Edge, tolerance, ref bestX, ref dx, ref guideX, ref kindX);
+                Consider(x1, tx0, Edge, tolerance, ref bestX, ref dx, ref guideX, ref kindX); Consider(x1, tx1, Centre, tolerance, ref bestX, ref dx, ref guideX, ref kindX); Consider(x1, tx2, Edge, tolerance, ref bestX, ref dx, ref guideX, ref kindX);
+                Consider(x2, tx0, Edge, tolerance, ref bestX, ref dx, ref guideX, ref kindX); Consider(x2, tx1, Edge, tolerance, ref bestX, ref dx, ref guideX, ref kindX); Consider(x2, tx2, Edge, tolerance, ref bestX, ref dx, ref guideX, ref kindX);
                 float ty0 = target.Top, ty1 = target.Top + target.Height / 2, ty2 = target.Bottom;
-                Consider(y0, ty0, Edge, ref bestY, ref dy, ref guideY, ref kindY); Consider(y0, ty1, Edge, ref bestY, ref dy, ref guideY, ref kindY); Consider(y0, ty2, Edge, ref bestY, ref dy, ref guideY, ref kindY);
-                Consider(y1, ty0, Edge, ref bestY, ref dy, ref guideY, ref kindY); Consider(y1, ty1, Centre, ref bestY, ref dy, ref guideY, ref kindY); Consider(y1, ty2, Edge, ref bestY, ref dy, ref guideY, ref kindY);
-                Consider(y2, ty0, Edge, ref bestY, ref dy, ref guideY, ref kindY); Consider(y2, ty1, Edge, ref bestY, ref dy, ref guideY, ref kindY); Consider(y2, ty2, Edge, ref bestY, ref dy, ref guideY, ref kindY);
+                Consider(y0, ty0, Edge, tolerance, ref bestY, ref dy, ref guideY, ref kindY); Consider(y0, ty1, Edge, tolerance, ref bestY, ref dy, ref guideY, ref kindY); Consider(y0, ty2, Edge, tolerance, ref bestY, ref dy, ref guideY, ref kindY);
+                Consider(y1, ty0, Edge, tolerance, ref bestY, ref dy, ref guideY, ref kindY); Consider(y1, ty1, Centre, tolerance, ref bestY, ref dy, ref guideY, ref kindY); Consider(y1, ty2, Edge, tolerance, ref bestY, ref dy, ref guideY, ref kindY);
+                Consider(y2, ty0, Edge, tolerance, ref bestY, ref dy, ref guideY, ref kindY); Consider(y2, ty1, Edge, tolerance, ref bestY, ref dy, ref guideY, ref kindY); Consider(y2, ty2, Edge, tolerance, ref bestY, ref dy, ref guideY, ref kindY);
             }
             // Grips of the components this selection is actually wired to; only the
             // moving centre lines up with them.
             if (ports != null)
                 foreach (var port in ports)
                 {
-                    Consider(x1, port.X, Port, ref bestX, ref dx, ref guideX, ref kindX);
-                    Consider(y1, port.Y, Port, ref bestY, ref dy, ref guideY, ref kindY);
+                    Consider(x1, port.X, Port, tolerance, ref bestX, ref dx, ref guideX, ref kindX);
+                    // Lining the moving centre up with the grip it wires into is the one
+                    // the drag is usually reaching for, so it grabs from further away.
+                    Consider(y1, port.Y, Port, tolerance*PortReach, ref bestY, ref dy, ref guideY, ref kindY);
                 }
             return new PointF(dx, dy);
         }
@@ -142,13 +150,6 @@ namespace WireShelf
             var under = canvas.Document.FindAttribute(ev.CanvasLocation, true);
             if (under == null || !ids.Contains(under.GetTopLevel.DocObject.InstanceGuid)) return;
             if (canvas.Document.Objects.Any(o=>ids.Contains(o.InstanceGuid) && !(o is IGH_Component || o is IGH_Param || o is GH_Group))) return;
-            if ((modifiers & Keys.Alt) != 0)
-            {
-                // Alt leaves the originals where they are and drags a copy instead.
-                if (!Ui.Try(delegate { CanvasOperations.DuplicateInPlace(canvas.Document); })) return;
-                ids = CanvasOperations.ExpandSelection(canvas.Document);
-                if (ids.Count == 0) return;
-            }
             canvas.ActiveInteraction = new AlignInteraction(canvas,ev,ids);
         }
         public void Dispose()
@@ -279,7 +280,21 @@ namespace WireShelf
         readonly GH_UndoRecord undo;
         float? guideX, guideY;
         int kindX, kindY;
-        bool committed, moved;
+        bool committed, moved, copied;
+        // Alt is read while the drag runs rather than when it starts: Grasshopper does
+        // not always begin a drag under a held modifier, and reading it here also lets
+        // the key be pressed part-way through, the way a copy-drag usually works.
+        // The originals go back to where they started, a copy is left there, and the
+        // originals carry on under the cursor.
+        void LeaveCopy()
+        {
+            if (copied || (Control.ModifierKeys & Keys.Alt) == 0) return;
+            copied = true;
+            Position(PointF.Empty);
+            if (!Ui.Try(delegate { CanvasOperations.DuplicateInPlace(doc); })) return;
+            doc.DeselectAll();
+            foreach (var obj in objects) obj.Attributes.Selected = true;
+        }
         static void Grip(List<PointF> into, IGH_Param param, HashSet<Guid> moving, bool output)
         {
             if (param == null || param.Attributes == null) return;
@@ -344,6 +359,7 @@ namespace WireShelf
             if(sender.Document!=doc) return GH_ObjectResponse.Release;
             var delta=new PointF(e.CanvasX-CanvasPointDown.X,e.CanvasY-CanvasPointDown.Y);
             if(!moved && Math.Abs(delta.X)*sender.Viewport.Zoom<3 && Math.Abs(delta.Y)*sender.Viewport.Zoom<3) return GH_ObjectResponse.Handled;
+            LeaveCopy();
             // Shift picks the axis from the raw drag and holds the other one still,
             // before and after snapping, so alignment cannot reintroduce the movement
             // the modifier just took away.

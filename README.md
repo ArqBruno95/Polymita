@@ -10,11 +10,11 @@ Polymita is the scientific name used internationally for Cuba's painted snails. 
 - **Alt+A / Alt+D** insert a generic **Data** container before or after the selection. Each existing wire on that side gets its own container spliced into it, the way a relay sits in a wire; a port with no wire gets a container joined to it. Containers are drawn as their name rather than their icon.
 - **Alt+G** adds to every group each object whose area overlaps it. With nothing selected it tidies the whole definition; select groups to narrow it to those.
 - **Double-click a wire** to drop a relay into it. The relay takes the wire over rather than branching off it, so the route stays one chain. **Double-click a relay** to dissolve it and reconnect both ends.
-- **Shift** while dragging constrains the move to horizontal or vertical. **Alt** while dragging leaves a copy behind and drags the copy.
-- Snapping now also aligns the moving centre with the grips of components the selection is wired to. Guides are coloured: green for an edge, red for a centre axis, blue for a connected port.
+- **Shift** while dragging constrains the move to horizontal or vertical. **Alt** leaves a copy behind; it is read while the drag runs, so it can be pressed before or part-way through.
+- Snapping now also aligns the moving centre with the grips of components the selection is wired to, and reaches four times as far on the horizontal centre axis, which is the alignment a drag is usually after. Guides are coloured: green for an edge, red for a centre axis, blue for a connected port.
 - **Alt+Q** places the copy immediately beside the original rather than hunting for clear space beyond every obstacle.
 - Component captions are on by default and are painted behind objects, so an overlapping component stays readable.
-- Favorites inserted from the palette turn on Grasshopper's full port names.
+- Favorites inserted from the palette carry **full input and output names**. Each port is named after itself, so the full name shows whichever way the machine-wide Draw Full Names setting is left, and nothing else on the canvas changes.
 - The library editor shows each favorite's component icon beside its name.
 - Releasing a dragged wire over a group opens the palette, as releasing over bare canvas already did.
 

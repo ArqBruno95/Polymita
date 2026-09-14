@@ -30,6 +30,14 @@ public static class GestureTests
             Check(delta.Y==1 && y==120,"Center and edges use nearest reference");
             delta=AlignmentGeometry.Snap(new RectangleF(100,160,40,40),new[]{new RectangleF(300,100,40,40)},8,out x,out y);
             Check(delta==PointF.Empty,"Outside tolerance remains unsnapped");
+            int kx,ky;
+            var none=new RectangleF[0];
+            delta=AlignmentGeometry.Snap(new RectangleF(100,100,40,40),none,new[]{new PointF(500,140)},8,out x,out y,out kx,out ky);
+            Check(delta.Y==20 && ky==AlignmentGeometry.Port,"A wired port pulls the centre from four times the plain tolerance");
+            delta=AlignmentGeometry.Snap(new RectangleF(100,100,40,40),none,new[]{new PointF(500,160)},8,out x,out y,out kx,out ky);
+            Check(delta.Y==0 && !y.HasValue,"Past that reach the port lets go");
+            delta=AlignmentGeometry.Snap(new RectangleF(100,100,40,40),new[]{new RectangleF(500,101,40,40)},new[]{new PointF(500,140)},8,out x,out y,out kx,out ky);
+            Check(ky==AlignmentGeometry.Edge,"A close edge still beats a port reaching from further away");
             Check(AlignmentGeometry.Crosses(new PointF(0,0),new PointF(100,100),new PointF(0,100),new PointF(100,0),0),"Fast sweep crosses between mouse samples");
             Check(!AlignmentGeometry.Crosses(new PointF(0,0),new PointF(10,0),new PointF(20,0),new PointF(30,0),2),"Separated collinear strokes do not cut");
             Check(AlignmentGeometry.Crosses(new PointF(5,1),new PointF(5,1),new PointF(0,0),new PointF(10,0),2),"Stationary hit respects tolerance");
