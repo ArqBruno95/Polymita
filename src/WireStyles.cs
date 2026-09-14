@@ -163,19 +163,42 @@ namespace WireShelf
                 var path = Path.Combine(Path.GetDirectoryName(location), "runtimes", framework, "0Harmony.dll");
                 if (File.Exists(path)) return Assembly.LoadFrom(path);
             }
+            byte[] bytes;
             using (var stream = typeof(WireStyles).Assembly.GetManifestResourceStream("Polymita.runtimes." + framework + ".0Harmony.dll"))
             {
                 if (stream == null)
                     throw new NotSupportedException("This build of Polymita does not carry the Harmony runtime for " + framework + ".");
-                var bytes = new byte[stream.Length];
+                bytes = new byte[stream.Length];
                 for (var read = 0; read < bytes.Length; )
                 {
                     var step = stream.Read(bytes, read, bytes.Length - read);
                     if (step <= 0) throw new IOException("The embedded Harmony runtime could not be read.");
                     read += step;
                 }
-                harmony0 = Assembly.Load(bytes);
             }
+            // Harmony rewrites methods at run time and expects a file behind its own
+            // assembly; loaded straight from memory it has no location to work from and
+            // the patch fails, which is what left both wire styles unavailable. Unpack
+            // the carried copy beside the settings once and load it from there.
+            try
+            {
+                var folder = Path.Combine(Path.Combine(Grasshopper.Folders.SettingsFolder, "WireShelf"), Path.Combine("runtimes", framework));
+                var unpacked = Path.Combine(folder, "0Harmony.dll");
+                if (!File.Exists(unpacked) || new FileInfo(unpacked).Length != bytes.Length)
+                {
+                    Directory.CreateDirectory(folder);
+                    var temp = unpacked + "." + Guid.NewGuid().ToString("N") + ".tmp";
+                    File.WriteAllBytes(temp, bytes);
+                    if (File.Exists(unpacked)) File.Delete(unpacked);
+                    File.Move(temp, unpacked);
+                }
+                return Assembly.LoadFrom(unpacked);
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+            catch (NotSupportedException) { }
+            // Nowhere writable: try it from memory rather than give up on the feature.
+            harmony0 = Assembly.Load(bytes);
             if (resolver == null)
             {
                 // Loaded from memory: a request by name has no file on disk to find.

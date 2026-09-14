@@ -389,15 +389,20 @@ namespace WireShelf
         {
             if (sender.Document != document) return GH_ObjectResponse.Release;
             if (e.Button != MouseButtons.Left) return base.RespondToMouseUp(sender, e);
+            // Letting go without having moved arms the wire and leaves it on the cursor,
+            // so a port can be joined with two clicks instead of one held drag. This has
+            // to come before any grip search: that release is still on the source's own
+            // grip, and handing it to Grasshopper there is what ends the wire.
+            var isClick = ShelfRuntime.Distance(origin, e.ControlLocation) < 6;
+            if (firstRelease && isClick) { firstRelease = false; return GH_ObjectResponse.Ignore; }
+            firstRelease = false;
+            if (Control.ModifierKeys != Keys.None) return base.RespondToMouseUp(sender, e);
             // Any grip, either direction, measured in screen pixels rather than canvas
             // units: releasing a wire near a port is a connection attempt, never a request
             // for the palette, and at low zoom ten canvas units is only a pixel or two.
             var reach = (int)Math.Max(10F, 16F/Math.Max(0.05F, sender.Viewport.Zoom));
-            var target = document.FindAttributeByGrip(e.CanvasLocation, false, true, true, reach);
-            if (target != null || Control.ModifierKeys != Keys.None) return base.RespondToMouseUp(sender, e);
-            var isClick = ShelfRuntime.Distance(origin, e.ControlLocation) < 6;
-            if (firstRelease && isClick) { firstRelease = false; return GH_ObjectResponse.Ignore; }
-            firstRelease = false;
+            if (document.FindAttributeByGrip(e.CanvasLocation, false, true, true, reach) != null)
+                return base.RespondToMouseUp(sender, e);
             // A group counts as an attribute under the cursor, so releasing a wire onto
             // one used to fall through to native behaviour and never open the palette.
             var under = document.FindAttribute(e.CanvasLocation, true);
