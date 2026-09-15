@@ -108,12 +108,25 @@ namespace Polymita
         // Never clear selection flags or hold on to a wire's previous selection colour.
         void RepaintAfterInput()
         {
-            if (disposed || repaintQueued || canvas.IsDisposed || !canvas.IsHandleCreated) return;
+            if (disposed || canvas.IsDisposed) return;
+            // Mark dirty straight away. Invalidate only posts WM_PAINT, which Windows
+            // delivers after the current input message, so this already reflects the
+            // selection Grasshopper set while handling it.
+            canvas.Invalidate();
+            // Then once more after anything Grasshopper posts for itself. A failed
+            // BeginInvoke must clear the flag: leaving it raised turned every later
+            // release into a no-op, and the wires kept whatever colour they last had.
+            if (repaintQueued || !canvas.IsHandleCreated) return;
             repaintQueued=true;
-            canvas.BeginInvoke(new Action(delegate {
-                repaintQueued=false;
-                if (!disposed && !canvas.IsDisposed) canvas.Invalidate();
-            }));
+            try
+            {
+                canvas.BeginInvoke(new Action(delegate {
+                    repaintQueued=false;
+                    if (!disposed && !canvas.IsDisposed) canvas.Invalidate();
+                }));
+            }
+            // ObjectDisposedException derives from this one, so it is covered too.
+            catch (InvalidOperationException) { repaintQueued=false; }
         }
         void Up(object sender, MouseEventArgs e) { RepaintAfterInput(); }
         void KeyUp(object sender, KeyEventArgs e) { RepaintAfterInput(); }
@@ -131,12 +144,30 @@ namespace Polymita
         void Down(object sender, MouseEventArgs e)
         {
             if (e.Button != MouseButtons.Left || canvas.Document == null) return;
+            // A press arriving while our own drag is still live means the previous one
+            // never finished. A release that went missing otherwise leaves that
+            // interaction holding the canvas, and every click after it is ignored,
+            // which is what reads as Grasshopper having locked up.
+            var stale = canvas.ActiveInteraction as AlignInteraction;
+            if (stale != null) { stale.EndInterrupted(); canvas.ActiveInteraction = null; }
             // The second press of a double-click lands on an object the first one just
             // selected, so taking the interaction there would swallow the gesture before
             // Grasshopper could act on it, which is what stopped relays dissolving.
             if (e.Clicks > 1) return;
-            if (StartCut(new GH_CanvasMouseEvent(canvas.Viewport,e), Control.ModifierKeys)) return;
-            StartAlign(e);
+            try
+            {
+                if (StartCut(new GH_CanvasMouseEvent(canvas.Viewport,e), Control.ModifierKeys)) return;
+                StartAlign(e);
+            }
+            catch (Exception ex)
+            {
+                // The press is already half-processed by the time this runs, so letting
+                // it throw leaves the canvas mid-gesture with no interaction. Put it
+                // back in a usable state and say so, rather than freezing the canvas.
+                if (canvas.ActiveInteraction is CutInteraction || canvas.ActiveInteraction is AlignInteraction)
+                    canvas.ActiveInteraction = null;
+                Rhino.RhinoApp.WriteLine("Polymita could not start that canvas gesture: " + ex.Message);
+            }
         }
         // Rhino pumps its own messages, so Application.AddMessageFilter never saw the
         // canvas's ordinary mouse messages — the same reason the double-Shift gesture
@@ -301,33 +332,49 @@ namespace Polymita
     internal sealed class AlignInteraction : GH_DragInteraction
     {
         readonly GH_Document doc;
-        readonly List<IGH_DocumentObject> objects;
-        readonly IGH_DocumentObject[] movers;
-        readonly GH_Group[] affected;
-        readonly Dictionary<IGH_DocumentObject,PointF> pivots;
-        readonly RectangleF bounds;
-        readonly RectangleF[] targets;
-        readonly PointF[] ports;
+        readonly HashSet<Guid> ids;
+        readonly PointF origin;
+        List<IGH_DocumentObject> objects;
+        IGH_DocumentObject[] movers;
+        GH_Group[] affected;
+        Dictionary<IGH_DocumentObject,PointF> pivots;
+        RectangleF bounds;
+        RectangleF[] targets;
+        PointF[] ports;
         float anchorY;
-        readonly GH_UndoRecord undo;
+        GH_UndoRecord undo;
         float? guideX, guideY;
         int kindX, kindY;
-        bool committed, moved, nativeDrag, destroyed;
+        bool committed, moved, nativeDrag, destroyed, prepared;
         internal AlignInteraction(GH_Canvas canvas,GH_CanvasMouseEvent e,HashSet<Guid> ids) : base(canvas,e)
         {
             // Keep the native delayed activation: an ordinary click must reach the
             // object's MouseUp handler, and must not be treated as a completed drag.
-            doc=canvas.Document;
-            objects=doc.Objects.Where(o=>ids.Contains(o.InstanceGuid)).ToList();
+            // Nothing costly belongs here either. Most presses never become a drag, and
+            // gathering alignment state for the whole definition on every one of them is
+            // what made simply selecting a component feel like the canvas had stopped.
+            doc=canvas.Document; this.ids=ids; origin=e.CanvasLocation;
+            canvas.CanvasPostPaintObjects+=Paint;
+        }
+        // Everything the alignment needs, gathered the first time a press actually
+        // becomes a drag. False means there is nothing left to move.
+        bool Prepare()
+        {
+            if (prepared) return objects!=null;
+            prepared=true;
+            objects=doc.Objects.Where(o=>ids.Contains(o.InstanceGuid) && o.Attributes!=null).ToList();
+            if (objects.Count==0) { objects=null; return false; }
             pivots=objects.ToDictionary(o=>o,o=>o.Attributes.Pivot);
-            var reference=DragAnchors.Reference(doc,ids,e.CanvasLocation);
-            bounds=reference!=null ? reference.Attributes.Bounds : objects.Select(o=>o.Attributes.Bounds).Aggregate(RectangleF.Union);
+            var reference=DragAnchors.Reference(doc,ids,origin);
+            bounds=reference!=null && reference.Attributes!=null ? reference.Attributes.Bounds
+                : objects.Select(o=>o.Attributes.Bounds).Aggregate(RectangleF.Union);
             // Parent groups containing moving objects cannot be stationary references.
             var excluded=new HashSet<Guid>(ids);
             bool changed;
             do { changed=false; foreach(var g in doc.Objects.OfType<GH_Group>())
                 if(g.ObjectIDs.Any(excluded.Contains) && excluded.Add(g.InstanceGuid)) changed=true; } while(changed);
-            targets=doc.Objects.Where(o=>!excluded.Contains(o.InstanceGuid) && (o is IGH_Component || o is IGH_Param || o is GH_Group))
+            targets=doc.Objects.Where(o=>!excluded.Contains(o.InstanceGuid) && o.Attributes!=null
+                    && (o is IGH_Component || o is IGH_Param || o is GH_Group))
                 .Select(o=>o.Attributes.Bounds).ToArray();
             // Only a group holding something that moves changes shape, and a parent has to
             // read updated children, so they are laid out innermost first. Re-laying out
@@ -336,10 +383,10 @@ namespace Polymita
             affected=doc.Objects.OfType<GH_Group>().Where(g=>excluded.Contains(g.InstanceGuid))
                 .OrderBy(g=>Contained(doc,g.InstanceGuid,sizes)).ToArray();
             movers=objects.Where(o=>!(o is GH_Group) || ((GH_Group)o).ObjectIDs.Count==0).ToArray();
-            var anchors = new DragAnchors(doc, ids, objects, excluded, e.CanvasLocation, bounds);
+            var anchors = new DragAnchors(doc, ids, objects, excluded, origin, bounds);
             ports=anchors.Targets; anchorY=anchors.AnchorY;
             undo=doc.UndoUtil.CreatePivotEvent("Polymita: align selection",objects);
-            canvas.CanvasPostPaintObjects+=Paint;
+            return true;
         }
         // Transitive member count: a group always holds strictly more than any group
         // inside it, so ordering by it ascending lays inner groups out first.
@@ -356,6 +403,9 @@ namespace Polymita
         }
         void Position(PointF delta)
         {
+            // Pressing Alt before the drag has moved reaches here with nothing yet
+            // gathered, and there is no translation to undo in that case.
+            if (movers==null) return;
             foreach(var obj in movers)
             { var p=pivots[obj]; obj.Attributes.Pivot=new PointF(p.X+delta.X,p.Y+delta.Y); obj.Attributes.ExpireLayout(); obj.Attributes.PerformLayout(); }
             foreach(var g in affected) { g.Attributes.ExpireLayout(); g.Attributes.PerformLayout(); }
@@ -369,6 +419,9 @@ namespace Polymita
             var delta=new PointF(e.CanvasX-CanvasPointDown.X,e.CanvasY-CanvasPointDown.Y);
             if(!IsActive && Math.Abs(delta.X)*sender.Viewport.Zoom<=2 && Math.Abs(delta.Y)*sender.Viewport.Zoom<=2) return GH_ObjectResponse.Ignore;
             m_active=true;
+            // The first move that clears the dead zone is where the alignment state
+            // is worth building; a press that never gets here costs nothing.
+            if (!Prepare()) return GH_ObjectResponse.Release;
             // Shift picks the axis from the raw drag and holds the other one still,
             // before and after snapping, so alignment cannot reintroduce the movement
             // the modifier just took away.
@@ -401,7 +454,7 @@ namespace Polymita
         void Commit()
         {
             if (committed) return;
-            if (moved) { doc.UndoUtil.RecordEvent(undo); doc.Modified(); }
+            if (moved && undo!=null) { doc.UndoUtil.RecordEvent(undo); doc.Modified(); }
             committed=true;
         }
         internal void EndInterrupted()

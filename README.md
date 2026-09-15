@@ -2,6 +2,14 @@
 
 Favorites, configured component recipes and canvas tools for **Grasshopper in Rhino 8 on Windows**.
 
+## Changes in 0.8.7
+
+Three faults in canvas interaction, with one shared consequence: the canvas stopped reflecting what was selected.
+
+- **Selection no longer stalls.** The alignment drag gathered its state for the whole definition inside its constructor, on every press, before the pointer had moved at all. That work now happens the first time a press actually becomes a drag, so an ordinary click costs nothing.
+- **A press can no longer end in an exception.** Mouse-down is guarded: if starting a gesture fails, the canvas is put back in a usable state and the reason is written to the Rhino command line, instead of the canvas being left mid-gesture holding no interaction and ignoring every later click. A press that arrives while a previous drag is somehow still live now ends that drag first.
+- **Wires follow the selection again.** The repaint scheduled after each mouse and keyboard release could latch off permanently: a `BeginInvoke` that failed left its guard flag raised, and from then on every release was a no-op, so wires kept whatever colour they last had. The flag is now cleared on failure, and the canvas is marked dirty immediately as well as after.
+
 ## Changes in 0.8.6
 
 Ordinary clicks retain native delayed drag activation. Interrupted drags release correctly and retain Undo. Mouse and keyboard releases schedule a full Canvas repaint so wire colours follow current selection. Multiple selections snap using the grabbed component's bounds and ports. Group-border drags snap using the group bounds; nested groups and annotations are supported.
