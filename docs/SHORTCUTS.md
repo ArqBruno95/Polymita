@@ -1,6 +1,6 @@
-﻿# Requested catalog
+# Requested catalog
 
-197 entries verified against installed Rhino 8 components. Screenshot GUIDs were checked against quickwires.json. Gene Pool and GenePool Controller are separate shortcuts. The two Panel entries preserve the texts 0 and 0-1.
+Catalog inventory supplied with 0.8.4: 197 entries. The earlier package reported these GUIDs as verified against installed Rhino 8 components and quickwires.json; that full catalog resolution check has not been rerun for 0.8.5. Gene Pool and GenePool Controller are separate shortcuts. The two Panel entries preserve the texts 0 and 0-1.
 
 | Section | Requested | Installed component | Plugin | GUID |
 |---|---|---|---|---|

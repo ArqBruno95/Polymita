@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-namespace WireShelf {
+namespace Polymita {
     // Translate only labels shipped by earlier versions. User recipe payloads remain untouched.
     public static class EnglishLibrary {
         static readonly Dictionary<string,string> Titles = new Dictionary<string,string> {

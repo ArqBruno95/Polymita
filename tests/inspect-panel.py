@@ -2,9 +2,9 @@ import os
 import clr
 import System
 root = os.path.dirname(os.path.dirname(__file__))
-clr.AddReferenceToFileAndPath(os.path.join(root, "dist", "WireShelf.gha"))
+clr.AddReferenceToFileAndPath(os.path.join(root, "dist", "Polymita.gha"))
 from Grasshopper.Kernel.Special import GH_Panel
-from WireShelf import Recipes
+from Polymita import Recipes
 p = GH_Panel()
 p.CreateAttributes()
 p.UserText = "rojo\nverde\nazul"

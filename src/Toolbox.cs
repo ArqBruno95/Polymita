@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-namespace WireShelf {
+namespace Polymita {
 internal sealed class Toolbox : IDisposable {
  readonly GH_Canvas canvas; readonly ToolboxSettings settings; readonly string path;
  readonly Dictionary<int,Form> windows=new Dictionary<int,Form>();

@@ -6,7 +6,7 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 
-namespace WireShelf
+namespace Polymita
 {
     public sealed class FinderEntry
     {

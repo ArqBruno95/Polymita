@@ -1,4 +1,4 @@
-﻿using Grasshopper;
+using Grasshopper;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Parameters;
 using Grasshopper.Kernel.Special;
@@ -6,7 +6,7 @@ using System;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using WireShelf;
+using Polymita;
 public static class OperationsTests {
  static TextWriter log; static int count;
  static void Check(bool value,string name) { if(!value) throw new Exception(name); count++; log.WriteLine("PASS "+name); log.Flush(); }

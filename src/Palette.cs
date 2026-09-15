@@ -7,7 +7,7 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 
-namespace WireShelf
+namespace Polymita
 {
     internal sealed class Palette : Form
     {
@@ -180,9 +180,15 @@ namespace WireShelf
                     using (var brush = new SolidBrush(Color.FromArgb(252, 230, 155))) e.Graphics.FillRectangle(brush, bounds);
                     using (var pen = new Pen(Ui.Accent)) e.Graphics.DrawRectangle(pen, bounds);
                 }
+                if (cell.Item.IsAction)
+                {
+                    var text = bounds; text.Inflate(-6, 0);
+                    TextRenderer.DrawText(e.Graphics, cell.Item.Name, Font, text, Ui.Ink,
+                        TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.PreserveGraphicsTranslateTransform);
+                    continue;
+                }
                 Image icon;
-                if(cell.Item.IsAction) icon=cell.Item.ActionId=="connect"?Brand.Connect:Brand.Duplicate;
-                else if (!icons.TryGetValue(cell.Item.ComponentId, out icon)) {
+                if (!icons.TryGetValue(cell.Item.ComponentId, out icon)) {
                     var proxy = Instances.ComponentServer.EmitObjectProxy(cell.Item.ComponentId);
                     icon = proxy == null ? null : proxy.Icon; icons[cell.Item.ComponentId] = icon;
                 }

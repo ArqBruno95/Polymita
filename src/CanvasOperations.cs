@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 
-namespace WireShelf
+namespace Polymita
 {
     public static class CanvasOperations
     {

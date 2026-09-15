@@ -2,7 +2,7 @@ using System;
 using System.Drawing;
 using System.IO;
 using Grasshopper.Kernel;
-using WireShelf;
+using Polymita;
 public static class VisualRegressionTests {
  static int count;static TextWriter log;
  static void Check(bool x,string m){if(!x)throw new Exception(m);count++;log.WriteLine("PASS "+m);}

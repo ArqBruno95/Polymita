@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
-using WireShelf;
+using Polymita;
 
 public static class CoreTests
 {
@@ -10,7 +10,7 @@ public static class CoreTests
     { if (!value) throw new Exception(name); count++; Console.WriteLine("PASS " + name); }
     public static int Main()
     {
-        var folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WireShelfTests-" + Guid.NewGuid().ToString("N"));
+        var folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "PolymitaTests-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(folder);
         try
         {

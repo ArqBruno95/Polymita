@@ -1,10 +1,10 @@
 import os
 import clr
 root = os.path.dirname(os.path.dirname(__file__))
-clr.AddReferenceToFileAndPath(os.path.join(root, "dist", "WireShelf.gha"))
+clr.AddReferenceToFileAndPath(os.path.join(root, "dist", "Polymita.gha"))
 from Grasshopper.Kernel import GH_Document
 from Grasshopper.Kernel.Special import GH_Panel
-from WireShelf import Recipes, Insertion
+from Polymita import Recipes, Insertion
 from System.Drawing import PointF
 lib = Recipes.Defaults()
 item = [i for s in lib.Sections for i in s.Items if i.Name == u"Merge \u00b7 Flatten"][0]

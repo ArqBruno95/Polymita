@@ -13,7 +13,7 @@ from Grasshopper.Kernel.Types import GH_Point
 
 root = os.path.dirname(os.path.dirname(__file__))
 canvas = Instances.ActiveCanvas
-if 'WireShelfOriginalDoc' not in sc.sticky:
+if 'PolymitaOriginalDoc' not in sc.sticky:
     original = canvas.Document
     if original is not None:
         serializable = next(t for t in original.GetType().GetInterfaces() if t.Name == 'GH_ISerializable')
@@ -23,24 +23,24 @@ if 'WireShelfOriginalDoc' not in sc.sticky:
         backup = os.path.join(root, 'test-output', 'before-toolbox-' + System.DateTime.Now.ToString('yyyyMMdd-HHmmss') + '.gh')
         if not archive.WriteToFile(backup, False, False):
             raise Exception('Cannot write the backup; test cancelled.')
-        sc.sticky['WireShelfOriginalDoc'] = original
-        sc.sticky['WireShelfOriginalViewport'] = canvas.Viewport.Duplicate()
+        sc.sticky['PolymitaOriginalDoc'] = original
+        sc.sticky['PolymitaOriginalViewport'] = canvas.Viewport.Duplicate()
 
 flags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static
 for assembly in System.AppDomain.CurrentDomain.GetAssemblies():
-    if assembly.GetName().Name.startswith('WireShelf'):
-        runtime = assembly.GetType('WireShelf.ShelfRuntime')
+    if assembly.GetName().Name.startswith('Polymita'):
+        runtime = assembly.GetType('Polymita.ShelfRuntime')
         if runtime is not None:
             editor = runtime.GetField('editor', flags).GetValue(None)
             if editor is not None and not editor.IsDisposed and editor.GetType().GetField('dirty', BindingFlags.NonPublic | BindingFlags.Instance).GetValue(editor):
                 raise Exception('Save the library draft first.')
             runtime.GetMethod('Shutdown', flags).Invoke(None, None)
 
-assembly = System.Reflection.Assembly.LoadFrom(os.path.join(root, 'test-output', 'WireShelf.ToolboxTest04.dll'))
-runtime = assembly.GetType('WireShelf.ShelfRuntime')
+assembly = System.Reflection.Assembly.LoadFrom(os.path.join(root, 'test-output', 'Polymita.ToolboxTest04.dll'))
+runtime = assembly.GetType('Polymita.ShelfRuntime')
 runtime.GetMethod('Initialize').Invoke(None, None)
 assembly.GetType('IntegrationTests').GetMethod('Run').Invoke(None, System.Array[System.Object]([root]))
-if 'WireShelfToolboxFixture' not in sc.sticky:
+if 'PolymitaToolboxFixture' not in sc.sticky:
     doc = GH_Document()
     panel = GH_Panel(); panel.CreateAttributes(); panel.UserText = '1'; panel.NickName = 'Datos de prueba'
     panel.Attributes.Pivot = PointF(100,100); doc.AddObject(panel, False)
@@ -51,8 +51,8 @@ if 'WireShelfToolboxFixture' not in sc.sticky:
     point.PersistentData.Append(GH_Point(Point3d(5,5,3)))
     doc.AddObject(point,False); doc.NewSolution(False)
     Instances.DocumentServer.AddDocument(doc)
-    sc.sticky['WireShelfToolboxFixture'] = doc
-canvas.Document = sc.sticky['WireShelfToolboxFixture']
+    sc.sticky['PolymitaToolboxFixture'] = doc
+canvas.Document = sc.sticky['PolymitaToolboxFixture']
 from Grasshopper.Kernel import GH_ProfilerMode
 canvas.Document.Profiler = GH_ProfilerMode.Processor
 canvas.Document.Objects[0].UserText = '1'
@@ -71,4 +71,4 @@ with open(os.path.join(root, 'test-output', 'toolbox-native.txt'), 'w') as repor
     for control in canvas.Parent.Controls:
         report.write(control.Name + ': ' + str(control.Dock) + ' ' + str(control.Bounds) + '\n')
     report.write('Original document preserved; fixture active.\n')
-print('WireShelf toolbox fixture ready. Original definition retained with native backup.')
+print('Polymita toolbox fixture ready. Original definition retained with native backup.')

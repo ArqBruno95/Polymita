@@ -14,20 +14,20 @@ using System.Windows.Forms;
 
 [assembly: AssemblyTitle("Polymita")]
 [assembly: AssemblyDescription("Favorites, recipes and canvas tools for Grasshopper")]
-[assembly: AssemblyVersion("0.8.4.0")]
-[assembly: AssemblyFileVersion("0.8.4.0")]
-[assembly: AssemblyCopyright("WireShelf contributors, 2026. GPL-3.0-or-later.")]
+[assembly: AssemblyVersion("0.8.6.0")]
+[assembly: AssemblyFileVersion("0.8.6.0")]
+[assembly: AssemblyCopyright("Polymita contributors, 2026. GPL-3.0-or-later.")]
 
-namespace WireShelf
+namespace Polymita
 {
-    public sealed class WireShelfInfo : GH_AssemblyInfo
+    public sealed class PolymitaInfo : GH_AssemblyInfo
     {
         public override string Name { get { return "Polymita"; } }
         public override string Description { get { return "Your favorites, recipes and tools, one wire away."; } }
         public override Guid Id { get { return new Guid("0b6a3316-b9de-4441-8c44-2b893cf33731"); } }
         public override string AuthorName { get { return "Polymita"; } }
         public override string AuthorContact { get { return ""; } }
-        public override string Version { get { return "0.8.4"; } }
+        public override string Version { get { return "0.8.6"; } }
         public override Bitmap Icon { get { return ShelfRuntime.Icon; } }
     }
     public sealed class Priority : GH_AssemblyPriority
@@ -51,7 +51,17 @@ namespace WireShelf
         private static ShiftFilter shiftFilter;
         private static Toolbox toolbox;
         private static ToolboxSettings toolboxSettings;
-        private static string ToolboxPath { get { return Path.Combine(Folders.SettingsFolder, "WireShelf", "toolbox.json"); } }
+        private static SettingsStorage storage;
+        internal static SettingsStorage Storage
+        {
+            get
+            {
+                if (storage == null) storage = new SettingsStorage(Folders.SettingsFolder);
+                storage.Prepare();
+                return storage;
+            }
+        }
+        private static string ToolboxPath { get { return Storage.ToolboxPath; } }
         public static bool Enabled = true;
         public static readonly Bitmap Icon = Brand.Main;
         private static readonly Dictionary<GH_Canvas,CanvasLabels> labels = new Dictionary<GH_Canvas,CanvasLabels>();
@@ -63,7 +73,7 @@ namespace WireShelf
             {
                 if (library == null)
                 {
-                    store = new LibraryStore(Path.Combine(Folders.SettingsFolder, "WireShelf", "library.wireshelf.json"));
+                    store = new LibraryStore(Storage.LibraryPath);
                     try
                     {
                         library = store.Load() ?? Recipes.Defaults();
@@ -71,12 +81,9 @@ namespace WireShelf
                         // on it directly; a failure is discarded by the catch below anyway.
                         var expanded = library;
                         var changed=BuiltInCatalog.Apply(expanded);
-                        if(expanded.OperationsRevision<1) {
-                            expanded.Sections.Add(new ShelfSection { Title="Operations",Items=new List<ShelfItem> {
-                                new ShelfItem { ActionId="connect",Name="Connect selection · Alt+W",Notes="Connects left to right, in port order." },
-                                new ShelfItem { ActionId="duplicate",Name="Duplicate selection · Alt+Q",Notes="Copies components and complete groups to free space on the right." }
-                            } }); expanded.OperationsRevision=1; changed=true;
-                        }
+                        // Operations remain available from the menu and shortcuts.
+                        // Existing user-added actions are retained as text rows.
+                        if (expanded.OperationsRevision < 2) { expanded.OperationsRevision = 2; changed = true; }
                         changed=EnglishLibrary.Apply(expanded) || changed;
                         if (changed) { store.Save(expanded); library = expanded; }
                         if (store.Recovered) MessageBox.Show(Instances.DocumentEditor,
@@ -193,7 +200,7 @@ namespace WireShelf
             Tool("absorb", null, delegate { RunOperation("absorb"); });
             menu.DropDownItems.Add("Customise shortcuts…", null, delegate { EditShortcuts(); });
             menu.DropDownItems.Add("About / Help", null, delegate {
-                MessageBox.Show(host, "Polymita 0.8.4 · Rhino 8 / Windows\n\n" +
+                MessageBox.Show(host, "Polymita 0.8.6 · Rhino 8 / Windows\n\n" +
                     "Drag a wire from an input or output and release over empty canvas. You can also click a port and then empty canvas.\n\n" +
                     "Double Shift: insert without a wire at the cursor. Click an icon to insert; right-click to choose a port.\n\n" +
                     "Ctrl + left drag cuts wires. Shift while dragging constrains the move.\n\n" +
@@ -298,6 +305,8 @@ namespace WireShelf
         }
         private static void KeyDown(object sender, KeyEventArgs e)
         {
+            var canvas=sender as GH_Canvas;
+            if (canvas==null || canvas.ActiveInteraction!=null || Control.MouseButtons!=MouseButtons.None) return;
             // Alt combinations arrive through the Rhino-side hook instead.
             if ((e.Modifiers & Keys.Alt) != Keys.None) return;
             var id = Commands.Match(e.KeyCode | e.Modifiers);

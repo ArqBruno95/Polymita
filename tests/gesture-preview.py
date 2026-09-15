@@ -9,10 +9,10 @@ if 'GestureOriginalDoc' not in sc.sticky:
  sc.sticky['GestureOriginalDoc']=Instances.ActiveCanvas.Document
  sc.sticky['GestureOriginalView']=Instances.ActiveCanvas.Viewport.Duplicate()
 for a in System.AppDomain.CurrentDomain.GetAssemblies():
- r=a.GetType('WireShelf.ShelfRuntime')
+ r=a.GetType('Polymita.ShelfRuntime')
  if r is not None and r.GetField('initialized',flags).GetValue(None):r.GetMethod('Shutdown').Invoke(None,None)
 a=System.Reflection.Assembly.LoadFile(os.path.join(root,'test-output','Polymita.GestureTest04.dll'))
-a.GetType('WireShelf.ShelfRuntime').GetMethod('Initialize').Invoke(None,None)
+a.GetType('Polymita.ShelfRuntime').GetMethod('Initialize').Invoke(None,None)
 doc=GH_Document()
 for x,y in [(180,140),(500,260)]:
  p=Param_Number();p.CreateAttributes();p.Attributes.Pivot=PointF(x,y);doc.AddObject(p,False);p.Attributes.ExpireLayout();p.Attributes.PerformLayout()

@@ -5,7 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
-namespace WireShelf
+namespace Polymita
 {
     // Rhino has a native message pump, so WinForms IMessageFilter does not see its
     // keyboard messages. This hook belongs only to Rhino's current UI thread.

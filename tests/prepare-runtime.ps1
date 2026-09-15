@@ -1,4 +1,4 @@
-param([string]$Name = 'WireShelf.TestBuild')
+param([string]$Name = 'Polymita.TestBuild')
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
 $out = Join-Path $root 'test-output'
@@ -14,6 +14,8 @@ $arguments += Join-Path $PSScriptRoot 'ToolboxNativeTests.cs'
 $arguments += Join-Path $PSScriptRoot 'OperationsTests.cs'
 $arguments += Join-Path $PSScriptRoot 'VisualRegressionTests.cs'
 $arguments += Join-Path $PSScriptRoot 'GestureTests.cs'
+$arguments += Join-Path $PSScriptRoot 'Regression085Tests.cs'
+$arguments += Join-Path $PSScriptRoot 'Regression086Tests.cs'
 & $compiler @arguments
 if ($LASTEXITCODE -ne 0) { throw 'Error de compilación de pruebas de integración.' }
 foreach ($framework in @('net48', 'net7.0', 'net8.0')) {

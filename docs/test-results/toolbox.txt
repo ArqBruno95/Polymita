@@ -1,0 +1,66 @@
+PASS Polyline endpoints {X=0, Y=0} → {X=150, Y=70}
+PASS Only orthogonal segments
+PASS No Bezier segments
+PASS Polyline endpoints {X=0, Y=50} → {X=150, Y=50}
+PASS Only orthogonal segments
+PASS No Bezier segments
+PASS Polyline endpoints {X=150, Y=0} → {X=0, Y=70}
+PASS Only orthogonal segments
+PASS No Bezier segments
+PASS Polyline endpoints {X=150, Y=50} → {X=0, Y=50}
+PASS Only orthogonal segments
+PASS No Bezier segments
+PASS Polyline endpoints {X=0, Y=0} → {X=0, Y=0}
+PASS Only orthogonal segments
+PASS No Bezier segments
+PASS Polyline endpoints {X=-500, Y=-300} → {X=-495, Y=-310}
+PASS Only orthogonal segments
+PASS No Bezier segments
+PASS New settings retain the 0.8.4 defaults: adaptive polylines on, highlighting off
+PASS Round-trip tools preferences
+PASS Validated width and atomic backup
+PASS Invalid settings preserved
+PASS Finder handles no document
+PASS Hit testing follows vertical segment
+PASS Hit testing follows backwards aligned wire
+PASS Adaptive corners and horizontal ends
+PASS Backwards wire uses a short fixed stub
+PASS Adaptive diagonal hit test
+PASS Filleted wire still meets both grips
+PASS Filleted wire leaves and arrives horizontally
+PASS Adaptive corners are filleted
+PASS Adaptive corners and horizontal ends
+PASS Backwards wire uses a short fixed stub
+PASS Adaptive diagonal hit test
+PASS Filleted wire still meets both grips
+PASS Filleted wire leaves and arrives horizontally
+PASS Adaptive corners are filleted
+PASS Adaptive corners and horizontal ends
+PASS Backwards wire uses a short fixed stub
+PASS Adaptive diagonal hit test
+PASS Filleted wire still meets both grips
+PASS Filleted wire leaves and arrives horizontally
+PASS Adaptive corners are filleted
+PASS Adaptive corners and horizontal ends
+PASS Backwards wire uses a short fixed stub
+PASS Adaptive diagonal hit test
+PASS Filleted wire still meets both grips
+PASS Filleted wire leaves and arrives horizontally
+PASS Adaptive corners are filleted
+PASS Adaptive corners and horizontal ends
+PASS Backwards wire uses a short fixed stub
+PASS Adaptive diagonal hit test
+PASS Filleted wire still meets both grips
+PASS Filleted wire leaves and arrives horizontally
+PASS Adaptive corners are filleted
+PASS Adaptive corners and horizontal ends
+PASS Backwards wire uses a short fixed stub
+PASS Adaptive diagonal hit test
+PASS Filleted wire still meets both grips
+PASS Filleted wire leaves and arrives horizontally
+PASS Adaptive corners are filleted
+PASS English library migration
+PASS Migration preserves recipe payloads and IDs
+PASS Language migration only runs once
+PASS Hit testing clamps to segment endpoint
+65 toolbox checks passed.

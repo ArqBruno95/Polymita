@@ -1,0 +1,1 @@
+PASS installer uses packaged release, preserves two previous assemblies and leaves one active GHA

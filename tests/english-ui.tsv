@@ -1,6 +1,6 @@
-Nítido	Zunzún
-NÍTIDO	ZUNZÚN
-NitidoTool	ZunzunTool
+Polymita	Polymita
+Polymita	Polymita
+PolymitaTool	PolymitaTool
 Favoritos y recetas de componentes para Grasshopper	Favorites, recipes and canvas tools for Grasshopper
 Tu biblioteca de favoritos y recetas, a un cable de distancia.	Your favorites, recipes and tools, one wire away.
  · Buscar / Profiler	 · Find / Profiler
@@ -41,7 +41,7 @@ Añadir	Add
 Aplicar	Apply
 Árboles y lógica	Trees and logic
 Arrastra un cable desde un input u output y suéltalo en un espacio vacío. También puedes hacer clic en el puerto y después en el lienzo.\n\n	Drag a wire from an input or output and release over empty canvas. You can also click a port and then empty canvas.\n\n
-Biblioteca Nítido	Zunzún library
+Biblioteca Polymita	Polymita library
 Buscar componentes instalados	Search installed components
 Buscar componentes por nombre, alias o categoría	Search components by name, nickname or category
 Buscar en el script / Profiler	Find in definition / Profiler
@@ -100,7 +100,7 @@ Insertar sin cable	Insert without a wire
 Inspirado en QuickConnection, WiresRenderer y Sunglasses.\nGPL-3.0-or-later · Licencia y código fuente en el paquete.	Inspired by QuickConnection, WiresRenderer and Sunglasses.\nGPL-3.0-or-later · License and source included in the package.
 La biblioteca principal está dañada. Se ha recuperado la copia de seguridad. Guarda desde el editor para repararla.	The main library is damaged. A backup was recovered. Save from the editor to repair it.
 La biblioteca supera 32 MB.	The library exceeds 32 MB.
-La definición ha cambiado. Abre Nítido de nuevo.	The definition has changed. Open Zunzún again.
+La definición ha cambiado. Abre Polymita de nuevo.	The definition has changed. Open Polymita again.
 La receta supera 8 MB.	The recipe exceeds 8 MB.
 La selección no contiene salidas y entradas conectables.	The selection has no connectable outputs and inputs.
 Las secciones aparecen como títulos visibles en la paleta.\nUsa ↑ / ↓ o Alt + flechas para cambiar el orden.	Sections appear as headings in the palette.\nUse ↑ / ↓ or Alt + arrow keys to reorder.

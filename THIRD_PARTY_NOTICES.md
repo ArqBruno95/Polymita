@@ -1,6 +1,6 @@
-# Third-party notices — Polymita 0.6.0
+# Third-party notices — Polymita 0.8.5
 
-Polymita (formerly Nítido / WireShelf) is distributed under GPL-3.0-or-later. Full text: COPYING. Source is included. No warranty.
+Polymita is distributed under GPL-3.0-or-later. Full text: COPYING. Source is included. No warranty.
 
 ## QuickConnection
 

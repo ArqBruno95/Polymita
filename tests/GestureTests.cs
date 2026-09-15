@@ -8,7 +8,7 @@ using Grasshopper.GUI;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Parameters;
 using Grasshopper.Kernel.Special;
-using WireShelf;
+using Polymita;
 
 public static class GestureTests
 {
@@ -39,7 +39,7 @@ public static class GestureTests
             delta=AlignmentGeometry.Snap(new RectangleF(100,100,40,40),none,new[]{new PointF(500,140)},8,132,out x,out y,out kx,out ky);
             Check(delta.Y==8,"Ports measure against the anchor, not the box centre");
             delta=AlignmentGeometry.Snap(new RectangleF(100,100,40,40),new[]{new RectangleF(500,101,40,40)},new[]{new PointF(500,140)},8,120,out x,out y,out kx,out ky);
-            Check(ky==AlignmentGeometry.Edge,"A close edge still beats a port reaching from further away");
+            Check(ky==AlignmentGeometry.Port && delta.Y==20,"Port adhesion takes priority over a closer edge within its four-times reach");
             Check(AlignmentGeometry.Crosses(new PointF(0,0),new PointF(100,100),new PointF(0,100),new PointF(100,0),0),"Fast sweep crosses between mouse samples");
             Check(!AlignmentGeometry.Crosses(new PointF(0,0),new PointF(10,0),new PointF(20,0),new PointF(30,0),2),"Separated collinear strokes do not cut");
             Check(AlignmentGeometry.Crosses(new PointF(5,1),new PointF(5,1),new PointF(0,0),new PointF(10,0),2),"Stationary hit respects tolerance");

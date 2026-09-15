@@ -1,0 +1,30 @@
+PASS section order + Unicode + empty section roundtrip
+PASS recipe payload and preferred ports roundtrip
+PASS unconditional favorites preserve user order
+PASS search by section title
+PASS search by notes ignoring case
+PASS editor draft isolates canceled edits
+PASS atomic replacement creates backup
+PASS corrupt primary recovers last valid backup
+PASS recovery save does not overwrite valid backup with corrupt primary
+PASS no unfinished temporary writes
+PASS unsupported schema rejected
+PASS duplicate IDs rejected
+PASS invalid port rejected
+PASS empty section title rejected
+PASS catalog migration revision persists
+PASS single Shift does not open palette
+PASS double Shift opens on second release
+PASS triple tap does not reopen palette
+PASS held Shift autorepeat rejected
+PASS slow taps do not activate
+PASS chord or mouse action cancels pending gesture
+PASS all 197 requested icons fit together in a desktop palette
+PASS grid contains every icon
+PASS icon hit targets never overlap
+PASS section headings never overlap icons
+PASS cut and snap gestures are enabled by default
+PASS gesture switches survive a restart
+PASS settings written before the gestures existed keep both enabled
+PASS legacy settings keep their stored values
+29 core checks passed.

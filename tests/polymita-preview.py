@@ -10,12 +10,12 @@ if 'PolymitaOriginalDoc' not in sc.sticky:
  sc.sticky['PolymitaOriginalCanvasView']=Instances.ActiveCanvas.Viewport.Duplicate()
  sc.sticky['PolymitaOriginalSelection']=[o.Id for o in Rhino.RhinoDoc.ActiveDoc.Objects.GetSelectedObjects(False,False)]
 for a in System.AppDomain.CurrentDomain.GetAssemblies():
- r=a.GetType('WireShelf.ShelfRuntime')
+ r=a.GetType('Polymita.ShelfRuntime')
  if r is not None:
   editor=r.GetField('editor',flags).GetValue(None)
   if editor is not None and not editor.IsDisposed:raise Exception('Close the library editor first.')
   r.GetMethod('Shutdown',flags).Invoke(None,None)
-a=System.Reflection.Assembly.LoadFile(os.path.join(root,'test-output','WireShelf.PolymitaTest01.dll'))
+a=System.Reflection.Assembly.LoadFile(os.path.join(root,'test-output','Polymita.PolymitaTest01.dll'))
 a.GetType('VisualRegressionTests').GetMethod('Run').Invoke(None,System.Array[System.Object]([root]))
 if Instances.ActiveCanvas.Document is None:
  doc=GH_Document()
@@ -28,7 +28,7 @@ if Instances.ActiveCanvas.Document is None:
 sc.sticky['PolymitaTestObject']=Rhino.RhinoDoc.ActiveDoc.Objects.AddSphere(Rhino.Geometry.Sphere(Rhino.Geometry.Point3d.Origin,10))
 sc.sticky['PolymitaTestDoc']=Rhino.RhinoDoc.ActiveDoc
 sc.sticky['PolymitaBeforeLine']=set(o.Id for o in Rhino.RhinoDoc.ActiveDoc.Objects)
-r=a.GetType('WireShelf.ShelfRuntime');r.GetMethod('Initialize').Invoke(None,None)
+r=a.GetType('Polymita.ShelfRuntime');r.GetMethod('Initialize').Invoke(None,None)
 r.GetMethod('OpenToolbox',flags).Invoke(None,System.Array[System.Object]([System.Int32(0)]))
 sc.sticky['PolymitaAssembly']=a
 Instances.ActiveCanvas.Refresh()

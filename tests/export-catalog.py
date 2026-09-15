@@ -11,4 +11,4 @@ for p in Instances.ComponentServer.ObjectProxies:
         library=libraries.get(str(p.LibraryGuid), str(p.LibraryGuid)), obsolete=p.Obsolete))
 with codecs.open(os.path.join(root, 'test-output', 'installed-catalog.json'), 'w', 'utf-8') as f:
     json.dump(catalog, f, ensure_ascii=False, indent=2)
-print('WireShelf: exported %s installed components.' % len(catalog))
+print('Polymita: exported %s installed components.' % len(catalog))

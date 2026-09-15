@@ -9,7 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Xml;
 
-namespace WireShelf
+namespace Polymita
 {
     public static class Recipes
     {
@@ -23,7 +23,7 @@ namespace WireShelf
             if (item.IsRecipe)
             {
                 ValidateXml(item.SnapshotXml);
-                var chunk = new GH_LooseChunk("WireShelf");
+                var chunk = new GH_LooseChunk("Polymita");
                 chunk.Deserialize_Xml(item.SnapshotXml);
                 if (!obj.Read(chunk)) throw new InvalidDataException("Grasshopper could not restore this recipe.");
             }
@@ -40,13 +40,13 @@ namespace WireShelf
                 throw new InvalidOperationException("Select a component or parameter, such as Panel or Merge.");
             var item = new ShelfItem { ComponentId = original.ComponentGuid, Name = original.NickName,
                 Notes = original.Name + " · saved configuration" };
-            var chunk = new GH_LooseChunk("WireShelf");
+            var chunk = new GH_LooseChunk("Polymita");
             if (!original.Write(chunk)) throw new InvalidOperationException("This component cannot save its state.");
             item.SnapshotXml = chunk.Serialize_Xml();
             // Work on a detached copy. Never disconnect or mutate the source document.
             var copy = Create(item);
             copy.Attributes.Pivot = System.Drawing.PointF.Empty;
-            var clean = new GH_LooseChunk("WireShelf");
+            var clean = new GH_LooseChunk("Polymita");
             if (!copy.Write(clean)) throw new InvalidOperationException("The component copy could not be saved.");
             item.SnapshotXml = clean.Serialize_Xml();
             return item;

@@ -8,7 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
-using WireShelf;
+using Polymita;
 
 public static class ToolboxNativeTests
 {
@@ -75,7 +75,7 @@ public static class ToolboxNativeTests
     }
     private sealed class DelayComponent : GH_Component
     {
-        public DelayComponent() : base("Timing fixture", "Timing", "Test only", "WireShelf Tests", "Tests") { }
+        public DelayComponent() : base("Timing fixture", "Timing", "Test only", "Polymita Tests", "Tests") { }
         public override Guid ComponentGuid { get { return new Guid("c2d61bf5-b652-47c8-8a27-dbc839ccad06"); } }
         protected override void RegisterInputParams(GH_InputParamManager p) { }
         protected override void RegisterOutputParams(GH_OutputParamManager p) { p.AddNumberParameter("N","N","Test",GH_ParamAccess.item); }

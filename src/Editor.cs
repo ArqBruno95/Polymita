@@ -6,7 +6,7 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 
-namespace WireShelf
+namespace Polymita
 {
     internal sealed class Editor : Form
     {
@@ -97,12 +97,7 @@ namespace WireShelf
         // -1 leaves the row without an image, which is what a section heading wants.
         private int Thumbnail(ShelfItem item)
         {
-            if (item.IsAction)
-            {
-                var key = item.ActionId == "connect" ? new Guid("00000000-0000-0000-0000-0000000000c0")
-                    : new Guid("00000000-0000-0000-0000-0000000000d0");
-                return Register(key, item.ActionId == "connect" ? Brand.Connect : Brand.Duplicate);
-            }
+            if (item.IsAction) return 0; // Operations are text-only.
             var proxy = Instances.ComponentServer.EmitObjectProxy(item.ComponentId);
             return Register(item.ComponentId, proxy == null ? null : proxy.Icon);
         }
@@ -219,7 +214,7 @@ namespace WireShelf
         private void Save() { ShelfRuntime.Save(draft); dirty = false; Text = "Polymita · Library saved"; }
         private void Import()
         {
-            using (var picker = new OpenFileDialog { Filter = "Polymita library (*.wireshelf.json)|*.wireshelf.json|JSON (*.json)|*.json" })
+            using (var picker = new OpenFileDialog { Filter = "Polymita library (*.polymita.json)|*.polymita.json|JSON (*.json)|*.json" })
             {
                 if (picker.ShowDialog(this) != DialogResult.OK) return;
                 var incoming = LibraryStore.Read(picker.FileName);
@@ -233,7 +228,7 @@ namespace WireShelf
         }
         private void Export()
         {
-            using (var picker = new SaveFileDialog { Filter = "Polymita library (*.wireshelf.json)|*.wireshelf.json", FileName = "My library.wireshelf.json" })
+            using (var picker = new SaveFileDialog { Filter = "Polymita library (*.polymita.json)|*.polymita.json", FileName = "My library.polymita.json" })
                 if (picker.ShowDialog(this) == DialogResult.OK) new LibraryStore(picker.FileName).Save(draft);
         }
     }

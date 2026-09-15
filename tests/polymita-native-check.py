@@ -7,7 +7,7 @@ log=[]
 def check(ok,msg):
  if not ok:raise Exception(msg)
  log.append('PASS '+msg)
-a=sc.sticky['PolymitaAssembly'];r=a.GetType('WireShelf.ShelfRuntime');tb=r.GetField('toolbox',flags).GetValue(None)
+a=sc.sticky['PolymitaAssembly'];r=a.GetType('Polymita.ShelfRuntime');tb=r.GetField('toolbox',flags).GetValue(None)
 pane=tb.GetType().GetField('viewport',flags).GetValue(tb)
 host=pane.GetType().GetField('ViewControl',flags).GetValue(pane)
 v=host.GetType().GetProperty('NativeView',flags).GetValue(host,None)

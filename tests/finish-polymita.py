@@ -4,7 +4,7 @@ from System.Reflection import BindingFlags
 root=os.path.dirname(os.path.dirname(__file__))
 flags=BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Static|BindingFlags.Instance
 for old in System.AppDomain.CurrentDomain.GetAssemblies():
- r=old.GetType('WireShelf.ShelfRuntime')
+ r=old.GetType('Polymita.ShelfRuntime')
  if r is None:continue
  tb=r.GetField('toolbox',flags).GetValue(None)
  if tb is not None:
@@ -28,7 +28,7 @@ if fixture is not None:
  Instances.DocumentServer.RemoveDocument(fixture);fixture.Dispose();del sc.sticky['PolymitaFixtureDoc']
 path=os.path.join(System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),'Grasshopper','Libraries','Polymita','Polymita.gha')
 a=System.Reflection.Assembly.LoadFrom(path)
-a.GetType('WireShelf.ShelfRuntime').GetMethod('Initialize').Invoke(None,None)
+a.GetType('Polymita.ShelfRuntime').GetMethod('Initialize').Invoke(None,None)
 Instances.ActiveCanvas.Refresh()
 def finish(sender,e):
  if Rhino.Commands.Command.InCommand():return

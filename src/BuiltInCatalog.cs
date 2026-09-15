@@ -1,7 +1,7 @@
 using System;
 using System.Linq;
 using Grasshopper.Kernel.Special;
-namespace WireShelf {
+namespace Polymita {
     public static class BuiltInCatalog {
         public const int Revision = 1;
         public static bool Apply(ShelfLibrary library) {

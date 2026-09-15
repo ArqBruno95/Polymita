@@ -1,0 +1,40 @@
+PASS WireShelf: new directory uses current brand
+PASS WireShelf: migration is byte-for-byte, including recipe payloads
+PASS WireShelf: backups and originals retained
+PASS WireShelf: IDs preserved across namespace change
+PASS WireShelf: settings and custom shortcuts preserved
+PASS WireShelf: repeated migration never overwrites current data
+PASS WireShelf: backup recovery works at new path
+PASS Zunzun: new directory uses current brand
+PASS Zunzun: migration is byte-for-byte, including recipe payloads
+PASS Zunzun: backups and originals retained
+PASS Zunzun: IDs preserved across namespace change
+PASS Zunzun: settings and custom shortcuts preserved
+PASS Zunzun: repeated migration never overwrites current data
+PASS Zunzun: backup recovery works at new path
+PASS Zunzún: new directory uses current brand
+PASS Zunzún: migration is byte-for-byte, including recipe payloads
+PASS Zunzún: backups and originals retained
+PASS Zunzún: IDs preserved across namespace change
+PASS Zunzún: settings and custom shortcuts preserved
+PASS Zunzún: repeated migration never overwrites current data
+PASS Zunzún: backup recovery works at new path
+PASS Nitido: new directory uses current brand
+PASS Nitido: migration is byte-for-byte, including recipe payloads
+PASS Nitido: backups and originals retained
+PASS Nitido: IDs preserved across namespace change
+PASS Nitido: settings and custom shortcuts preserved
+PASS Nitido: repeated migration never overwrites current data
+PASS Nitido: backup recovery works at new path
+PASS Nítido: new directory uses current brand
+PASS Nítido: migration is byte-for-byte, including recipe payloads
+PASS Nítido: backups and originals retained
+PASS Nítido: IDs preserved across namespace change
+PASS Nítido: settings and custom shortcuts preserved
+PASS Nítido: repeated migration never overwrites current data
+PASS Nítido: backup recovery works at new path
+PASS Clean installation creates only the Polymita settings folder
+PASS Existing operation favorites are full-width text rows
+PASS Text actions and component icons have separate nonoverlapping hit targets
+PASS Operation favorites retain their saved position and identity
+39 storage and action-layout checks passed.

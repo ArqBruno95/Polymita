@@ -1,5 +1,5 @@
 using System;
-namespace WireShelf
+namespace Polymita
 {
     // Pure gesture state: a held Shift, chord, click or context change cancels it.
     public sealed class ShiftTap

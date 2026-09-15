@@ -6,7 +6,7 @@ using System;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-namespace WireShelf {
+namespace Polymita {
  internal sealed class RhinoViewportPane : UserControl {
   internal readonly NativeRhinoViewHost ViewControl;
   readonly ComboBox views=new ComboBox { DropDownStyle=ComboBoxStyle.DropDownList,AccessibleName="View direction" };

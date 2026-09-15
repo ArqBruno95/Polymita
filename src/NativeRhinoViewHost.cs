@@ -6,7 +6,7 @@ using System.Windows.Forms;
 using Grasshopper;
 using Rhino;
 using Rhino.Display;
-namespace WireShelf {
+namespace Polymita {
  // Keep the complete Rhino-owned floating frame intact. Reparenting its view
  // child breaks native viewport destruction/display contexts on document close.
  internal sealed class NativeRhinoViewHost : Control {

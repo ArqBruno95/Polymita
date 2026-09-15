@@ -8,7 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 
-namespace WireShelf
+namespace Polymita
 {
     public static class WireStyles
     {
@@ -147,7 +147,7 @@ namespace WireShelf
                 var type = assembly.GetType("HarmonyLib.Harmony", true);
                 // A reversible postfix also works when WiresRenderer supplies the original path.
                 // Its patches remain installed; disabling this option immediately restores its result.
-                harmony = Activator.CreateInstance(type, new object[] { "org.wireshelf.polylines" });
+                harmony = Activator.CreateInstance(type, new object[] { "org.polymita.polylines" });
                 Polylines = true;
                 try
                 {
@@ -198,7 +198,7 @@ namespace WireShelf
             // the carried copy beside the settings once and load it from there.
             try
             {
-                var folder = Path.Combine(Path.Combine(Grasshopper.Folders.SettingsFolder, "WireShelf"), Path.Combine("runtimes", framework));
+                var folder = Path.Combine(ShelfRuntime.Storage.DirectoryPath, "runtimes", framework);
                 var unpacked = Path.Combine(folder, "0Harmony.dll");
                 if (!File.Exists(unpacked) || new FileInfo(unpacked).Length != bytes.Length)
                 {

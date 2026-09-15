@@ -4,7 +4,7 @@ using Grasshopper.Kernel.Special;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-namespace WireShelf {
+namespace Polymita {
  internal sealed class CanvasLabels : IDisposable {
   readonly GH_Canvas canvas; readonly ToolboxSettings settings;
   // This runs on every canvas repaint. Measuring each caption again and rebuilding

@@ -12,17 +12,16 @@ using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
 
-namespace WireShelf
+namespace Polymita
 {
     public static class AlignmentGeometry
     {
         // What produced a guide, which is also how it is coloured on the canvas.
         public const int None = 0, Edge = 1, Centre = 2, Port = 3;
-        // How much further than the plain tolerance a port may pull the moving centre
-        // along the horizontal axis.
+        // Acquisition and release radius for ports, relative to edges, on both axes.
         public const float PortReach = 4F;
-        // Candidates are scored as a fraction of their own reach, so a reference with a
-        // wider window competes fairly rather than simply overruling a closer one.
+        // Rank candidates within each priority class by distance relative to reach.
+        // Eligible ports are resolved separately and take precedence over box guides.
         private static void Consider(float value, float reference, int kind, float reach,
             ref float best, ref float delta, ref float? guide, ref int bestKind)
         {
@@ -61,16 +60,18 @@ namespace WireShelf
                 Consider(y1, ty0, Edge, tolerance, ref bestY, ref dy, ref guideY, ref kindY); Consider(y1, ty1, Centre, tolerance, ref bestY, ref dy, ref guideY, ref kindY); Consider(y1, ty2, Edge, tolerance, ref bestY, ref dy, ref guideY, ref kindY);
                 Consider(y2, ty0, Edge, tolerance, ref bestY, ref dy, ref guideY, ref kindY); Consider(y2, ty1, Edge, tolerance, ref bestY, ref dy, ref guideY, ref kindY); Consider(y2, ty2, Edge, tolerance, ref bestY, ref dy, ref guideY, ref kindY);
             }
-            // Grips of the components this selection is actually wired to; only the
-            // moving centre lines up with them.
             if (ports != null)
+            {
+                float portBestX=1F, portBestY=1F, portDx=0, portDy=0;
+                float? portGuideX=null, portGuideY=null; int portKindX=None, portKindY=None;
                 foreach (var port in ports)
                 {
-                    Consider(x1, port.X, Port, tolerance, ref bestX, ref dx, ref guideX, ref kindX);
-                    // Lining the moving centre up with the grip it wires into is the one
-                    // the drag is usually reaching for, so it grabs from further away.
-                    Consider(anchorY, port.Y, Port, tolerance*PortReach, ref bestY, ref dy, ref guideY, ref kindY);
+                    Consider(x1, port.X, Port, tolerance*PortReach, ref portBestX, ref portDx, ref portGuideX, ref portKindX);
+                    Consider(anchorY, port.Y, Port, tolerance*PortReach, ref portBestY, ref portDy, ref portGuideY, ref portKindY);
                 }
+                if (portGuideX.HasValue) { dx=portDx; guideX=portGuideX; kindX=Port; }
+                if (portGuideY.HasValue) { dy=portDy; guideY=portGuideY; kindY=Port; }
+            }
             return new PointF(dx, dy);
         }
         public static bool Crosses(PointF a, PointF b, PointF c, PointF d, float tolerance)
@@ -94,9 +95,39 @@ namespace WireShelf
     internal sealed class CanvasGestures : IDisposable
     {
         readonly GH_Canvas canvas;
+        bool repaintQueued, disposed;
         internal static bool CutEnabled = true, SnapEnabled = true;
         internal CanvasGestures(GH_Canvas canvas)
-        { this.canvas=canvas; canvas.MouseDown += Down; }
+        {
+            this.canvas=canvas; canvas.MouseDown += Down;
+            canvas.MouseUp += Up; canvas.KeyUp += KeyUp;
+            canvas.MouseCaptureChanged += CaptureChanged;
+        }
+        // Run after the native input dispatch, including Select All and deselection.
+        // A full invalidation redraws the wires as well as the component capsules.
+        // Never clear selection flags or hold on to a wire's previous selection colour.
+        void RepaintAfterInput()
+        {
+            if (disposed || repaintQueued || canvas.IsDisposed || !canvas.IsHandleCreated) return;
+            repaintQueued=true;
+            canvas.BeginInvoke(new Action(delegate {
+                repaintQueued=false;
+                if (!disposed && !canvas.IsDisposed) canvas.Invalidate();
+            }));
+        }
+        void Up(object sender, MouseEventArgs e) { RepaintAfterInput(); }
+        void KeyUp(object sender, KeyEventArgs e) { RepaintAfterInput(); }
+        void CaptureChanged(object sender, EventArgs e)
+        {
+            // WinForms may release capture before delivering MouseUp. Defer recovery
+            // so the normal release can finish first, and only end our own drag.
+            var drag=canvas.ActiveInteraction as AlignInteraction;
+            if (drag==null || canvas.Capture || !canvas.IsHandleCreated) return;
+            canvas.BeginInvoke(new Action(delegate {
+                if (disposed || canvas.IsDisposed || canvas.Capture || canvas.ActiveInteraction!=drag) return;
+                drag.EndInterrupted(); canvas.ActiveInteraction=null; RepaintAfterInput();
+            }));
+        }
         void Down(object sender, MouseEventArgs e)
         {
             if (e.Button != MouseButtons.Left || canvas.Document == null) return;
@@ -129,27 +160,33 @@ namespace WireShelf
         {
             // Ctrl belongs to the cutter and to native multiselection, and Alt to
             // Grasshopper's own copy-drag. Only a plain drag, or Shift to constrain it,
-            // is ours; Shift stays because Grasshopper binds nothing to it while dragging.
+            // is ours; native copying keeps Grasshopper's own modifier handling.
             var modifiers = Control.ModifierKeys & (Keys.Control|Keys.Shift|Keys.Alt);
             if ((modifiers & (Keys.Control|Keys.Alt)) != 0) return;
             if (!SnapEnabled && modifiers == Keys.None) return;
-            // Grasshopper starts its drag before this event runs. Taking over a null
-            // interaction as well is safe as long as the press really landed on
-            // something already selected, which is a drag.
+            // Extend only a drag that Grasshopper actually started. A selected
+            // component may instead be handling a button, slider or editor click.
             var live = canvas.ActiveInteraction;
-            if (live != null && live.GetType() != typeof(GH_DragInteraction)) return;
+            if (live == null || live.GetType() != typeof(GH_DragInteraction)) return;
             var ev = new GH_CanvasMouseEvent(canvas.Viewport,e);
             var ids = CanvasOperations.ExpandSelection(canvas.Document);
             if (ids.Count == 0) return;
             var under = canvas.Document.FindAttribute(ev.CanvasLocation, true);
             if (under == null || !ids.Contains(under.GetTopLevel.DocObject.InstanceGuid)) return;
-            if (canvas.Document.Objects.Any(o=>ids.Contains(o.InstanceGuid) && !(o is IGH_Component || o is IGH_Param || o is GH_Group))) return;
+            // Native drags can include scribbles and other objects inside groups.
+            // All members follow the same translation, regardless of object type.
+            // Destroy the previous native drag before constructing its replacement;
+            // otherwise its Destroy() would stop the new interaction's auto-pan.
+            canvas.ActiveInteraction = null;
             canvas.ActiveInteraction = new AlignInteraction(canvas,ev,ids);
         }
         public void Dispose()
         {
+            if (disposed) return; disposed=true;
             if (canvas.ActiveInteraction is CutInteraction || canvas.ActiveInteraction is AlignInteraction) canvas.ActiveInteraction=null;
             canvas.MouseDown -= Down;
+            canvas.MouseUp -= Up; canvas.KeyUp -= KeyUp;
+            canvas.MouseCaptureChanged -= CaptureChanged;
         }
     }
 
@@ -261,7 +298,7 @@ namespace WireShelf
         }
     }
 
-    internal sealed class AlignInteraction : GH_AbstractInteraction
+    internal sealed class AlignInteraction : GH_DragInteraction
     {
         readonly GH_Document doc;
         readonly List<IGH_DocumentObject> objects;
@@ -275,25 +312,16 @@ namespace WireShelf
         readonly GH_UndoRecord undo;
         float? guideX, guideY;
         int kindX, kindY;
-        bool committed, moved;
-        static void Nearest(PointF grip, PointF cursor, ref float best, ref float anchorY)
-        {
-            var gap=ShelfRuntime.Distance(grip,cursor);
-            if(gap>=best) return;
-            best=gap; anchorY=grip.Y;
-        }
-        static void Grip(List<PointF> into, IGH_Param param, HashSet<Guid> moving, bool output)
-        {
-            if (param == null || param.Attributes == null) return;
-            if (moving.Contains(param.Attributes.GetTopLevel.DocObject.InstanceGuid)) return;
-            into.Add(output ? param.Attributes.OutputGrip : param.Attributes.InputGrip);
-        }
+        bool committed, moved, nativeDrag, destroyed;
         internal AlignInteraction(GH_Canvas canvas,GH_CanvasMouseEvent e,HashSet<Guid> ids) : base(canvas,e)
         {
-            m_active=true; doc=canvas.Document;
+            // Keep the native delayed activation: an ordinary click must reach the
+            // object's MouseUp handler, and must not be treated as a completed drag.
+            doc=canvas.Document;
             objects=doc.Objects.Where(o=>ids.Contains(o.InstanceGuid)).ToList();
             pivots=objects.ToDictionary(o=>o,o=>o.Attributes.Pivot);
-            bounds=objects.Select(o=>o.Attributes.Bounds).Aggregate(RectangleF.Union);
+            var reference=DragAnchors.Reference(doc,ids,e.CanvasLocation);
+            bounds=reference!=null ? reference.Attributes.Bounds : objects.Select(o=>o.Attributes.Bounds).Aggregate(RectangleF.Union);
             // Parent groups containing moving objects cannot be stationary references.
             var excluded=new HashSet<Guid>(ids);
             bool changed;
@@ -308,31 +336,10 @@ namespace WireShelf
             affected=doc.Objects.OfType<GH_Group>().Where(g=>excluded.Contains(g.InstanceGuid))
                 .OrderBy(g=>Contained(doc,g.InstanceGuid,sizes)).ToArray();
             movers=objects.Where(o=>!(o is GH_Group) || ((GH_Group)o).ObjectIDs.Count==0).ToArray();
-            // Grips of everything this selection is wired to, so the moving centre can
-            // line up with the port it connects to rather than only with bounding boxes.
-            var grips=new List<PointF>();
-            foreach(var obj in objects)
-                foreach(var side in new[]{false,true})
-                    foreach(var port in Recipes.Ports(obj,side))
-                    {
-                        foreach(var source in port.Sources) Grip(grips,source,ids,true);
-                        foreach(var recipient in port.Recipients) Grip(grips,recipient,ids,false);
-                    }
-            ports=grips.ToArray();
-            // The moving grip closest to where the drag began. With one output that is
-            // effectively the centre line; with several it is the one being reached for.
-            anchorY=bounds.Top+bounds.Height/2;
-            var closest=float.MaxValue;
-            foreach(var obj in objects)
-                foreach(var side in new[]{false,true})
-                    foreach(var port in Recipes.Ports(obj,side))
-                    {
-                        if(port.Attributes==null) continue;
-                        if(side && port.Attributes.HasOutputGrip) Nearest(port.Attributes.OutputGrip,e.CanvasLocation,ref closest,ref anchorY);
-                        if(!side && port.Attributes.HasInputGrip) Nearest(port.Attributes.InputGrip,e.CanvasLocation,ref closest,ref anchorY);
-                    }
+            var anchors = new DragAnchors(doc, ids, objects, excluded, e.CanvasLocation, bounds);
+            ports=anchors.Targets; anchorY=anchors.AnchorY;
             undo=doc.UndoUtil.CreatePivotEvent("Polymita: align selection",objects);
-            canvas.CanvasPostPaintObjects+=Paint; canvas.Capture=true;
+            canvas.CanvasPostPaintObjects+=Paint;
         }
         // Transitive member count: a group always holds strictly more than any group
         // inside it, so ordering by it ascending lays inner groups out first.
@@ -356,8 +363,12 @@ namespace WireShelf
         public override GH_ObjectResponse RespondToMouseMove(GH_Canvas sender,GH_CanvasMouseEvent e)
         {
             if(sender.Document!=doc) return GH_ObjectResponse.Release;
+            if ((e.Button & MouseButtons.Left)==0)
+            { EndInterrupted(); return GH_ObjectResponse.Release; }
+            if (nativeDrag) return base.RespondToMouseMove(sender, e);
             var delta=new PointF(e.CanvasX-CanvasPointDown.X,e.CanvasY-CanvasPointDown.Y);
-            if(!moved && Math.Abs(delta.X)*sender.Viewport.Zoom<3 && Math.Abs(delta.Y)*sender.Viewport.Zoom<3) return GH_ObjectResponse.Handled;
+            if(!IsActive && Math.Abs(delta.X)*sender.Viewport.Zoom<=2 && Math.Abs(delta.Y)*sender.Viewport.Zoom<=2) return GH_ObjectResponse.Ignore;
+            m_active=true;
             // Shift picks the axis from the raw drag and holds the other one still,
             // before and after snapping, so alignment cannot reintroduce the movement
             // the modifier just took away.
@@ -377,11 +388,45 @@ namespace WireShelf
         }
         public override GH_ObjectResponse RespondToMouseUp(GH_Canvas sender,GH_CanvasMouseEvent e)
         {
-            if(sender.Document==doc && e.Button==MouseButtons.Left) { if(moved) doc.UndoUtil.RecordEvent(undo); committed=true; }
+            if (sender.Document != doc) return GH_ObjectResponse.Release;
+            if (nativeDrag) return base.RespondToMouseUp(sender, e);
+            if (e.Button==MouseButtons.Left)
+            {
+                // Account for a final mouse sample that was not delivered as MouseMove.
+                RespondToMouseMove(sender, e);
+                Commit();
+            }
             return GH_ObjectResponse.Release;
         }
+        void Commit()
+        {
+            if (committed) return;
+            if (moved) { doc.UndoUtil.RecordEvent(undo); doc.Modified(); }
+            committed=true;
+        }
+        internal void EndInterrupted()
+        {
+            if (destroyed) return;
+            // Finish the last displayed translation without taking a fresh cursor
+            // sample. A native copy still in preview is cancelled by native Escape.
+            if (nativeDrag) base.RespondToKeyDown(Canvas,new KeyEventArgs(Keys.Escape));
+            else Commit();
+        }
         public override GH_ObjectResponse RespondToKeyDown(GH_Canvas sender,KeyEventArgs e)
-        { return e.KeyCode==Keys.Escape ? GH_ObjectResponse.Release : GH_ObjectResponse.Handled; }
+        {
+            if (sender.Document != doc) return GH_ObjectResponse.Release;
+            if (!nativeDrag && (e.KeyCode == Keys.Menu || e.KeyCode == Keys.Alt))
+            {
+                // Native drag captured the original pivots in its constructor. Restore
+                // our snapped move, then let Grasshopper process the actual Alt press.
+                // This does not create a copy or implement an Alt mode of our own.
+                Position(PointF.Empty); guideX=guideY=null; nativeDrag=true;
+            }
+            if (nativeDrag) return base.RespondToKeyDown(sender, e);
+            return e.KeyCode==Keys.Escape || e.KeyCode==Keys.Cancel ? GH_ObjectResponse.Release : GH_ObjectResponse.Ignore;
+        }
+        public override GH_ObjectResponse RespondToKeyUp(GH_Canvas sender, KeyEventArgs e)
+        { return base.RespondToKeyUp(sender, e); }
         // Green lines up an edge, red a centre axis, blue the moving centre with the
         // grip of a component this selection is wired to.
         static Color Ink(int kind)
@@ -401,8 +446,15 @@ namespace WireShelf
         }
         public override void Destroy()
         {
-            if(!committed) Position(PointF.Empty);
-            Canvas.CanvasPostPaintObjects-=Paint; Canvas.Capture=false; Canvas.Invalidate(); base.Destroy();
+            if (destroyed) return; destroyed=true;
+            var canvas=Canvas;
+            try { if(!nativeDrag && !committed && moved) Position(PointF.Empty); }
+            finally
+            {
+                canvas.CanvasPostPaintObjects-=Paint;
+                if (!canvas.IsDisposed) canvas.Invalidate();
+                base.Destroy();
+            }
         }
     }
 }

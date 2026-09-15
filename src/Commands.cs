@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
 
-namespace WireShelf
+namespace Polymita
 {
     // Every action the plug-in binds to a key, in one table, so the menu, the canvas
     // key handler, the Rhino-side keyboard hook and the editor all read the same

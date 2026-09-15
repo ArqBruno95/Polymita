@@ -1,4 +1,4 @@
-// WireShelf — 2026. GPL-3.0-or-later. See COPYING and THIRD_PARTY_NOTICES.md.
+// Polymita — 2026. GPL-3.0-or-later. See COPYING and THIRD_PARTY_NOTICES.md.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,7 +6,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 
-namespace WireShelf
+namespace Polymita
 {
     [DataContract]
     public sealed class ShelfLibrary

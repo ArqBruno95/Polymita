@@ -1,0 +1,27 @@
+PASS A press alone stays inactive like native GH_DragInteraction
+PASS Small click jitter does not move or activate the drag
+PASS Click release permits native object MouseUp handling
+PASS Repeated cleanup is safe and an ordinary click preserves position
+PASS Actual movement activates and translates the component
+PASS Missing MouseUp releases the interaction without jumping to the cursor
+PASS Interrupted movement retains one-step Undo
+PASS Cancelled movement restores original placement
+PASS Repeated select/deselect clicks leave no blocked interaction or stale selection
+PASS The next component click still selects normally
+PASS Ctrl+A key release schedules a complete Canvas redraw
+PASS Deselection redraws the whole Canvas after native input completes
+PASS Losing mouse capture also releases our drag
+PASS Capture loss keeps movement undoable
+PASS Multiple selection snaps the grabbed component, not the union of selection bounds
+PASS All selected components follow the identical translation
+PASS Reference component remains stationary
+PASS Multi-selection movement undoes together
+PASS Group-border drag does not borrow a member's stronger wire snap
+PASS Nested group outline snaps to a stationary object edge
+PASS Nested components and annotations retain their relative positions
+PASS Grouped movement with annotations has one-step Undo
+PASS Native group drag containing a scribble receives Polymita snaps
+PASS Select All visibly changes the wire colour
+PASS Empty-canvas click deselects both wire endpoints
+PASS After deselection every sampled wire pixel returns to its original colour
+26 native Canvas regression checks passed.

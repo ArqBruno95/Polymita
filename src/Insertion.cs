@@ -6,7 +6,7 @@ using System;
 using System.Drawing;
 using System.Linq;
 
-namespace WireShelf
+namespace Polymita
 {
     public static class Insertion
     {

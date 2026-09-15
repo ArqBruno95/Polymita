@@ -15,7 +15,7 @@ def trace(sender, e):
         f.write("event=" + str(e.Button) + " interaction=" + (str(interaction.GetType().FullName) if interaction else "null") + "\n")
         f.write("attr=" + (str(a.DocObject.Name) if a else "null") + " point=" + str(ev.CanvasLocation) + "\n")
 canvas.MouseDown += trace
-scriptcontext.sticky['WireShelfTrace'] = trace
+scriptcontext.sticky['PolymitaTrace'] = trace
 with open(path, 'w') as f:
     f.write("Trace installed\n")
     for a in System.AppDomain.CurrentDomain.GetAssemblies():

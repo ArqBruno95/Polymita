@@ -3,7 +3,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 
-namespace WireShelf
+namespace Polymita
 {
     internal sealed class SearchBox : TextBox
     {

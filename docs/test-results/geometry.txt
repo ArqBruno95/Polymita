@@ -1,0 +1,17 @@
+PASS Alignment extends Grasshopper's native drag implementation
+PASS Both port axes capture at 31 screen pixels, zoom 0,5
+PASS Both port axes release beyond 32 screen pixels, zoom 0,5
+PASS Edges cannot capture at 9 screen pixels, zoom 0,5
+PASS Edges capture at 7 screen pixels, zoom 0,5
+PASS Ports keep priority even against an exact edge alignment, zoom 0,5
+PASS Both port axes capture at 31 screen pixels, zoom 1
+PASS Both port axes release beyond 32 screen pixels, zoom 1
+PASS Edges cannot capture at 9 screen pixels, zoom 1
+PASS Edges capture at 7 screen pixels, zoom 1
+PASS Ports keep priority even against an exact edge alignment, zoom 1
+PASS Both port axes capture at 31 screen pixels, zoom 2
+PASS Both port axes release beyond 32 screen pixels, zoom 2
+PASS Edges cannot capture at 9 screen pixels, zoom 2
+PASS Edges capture at 7 screen pixels, zoom 2
+PASS Ports keep priority even against an exact edge alignment, zoom 2
+16 geometry checks passed.

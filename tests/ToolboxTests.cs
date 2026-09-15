@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Grasshopper.GUI.Canvas;
-using WireShelf;
+using Polymita;
 
 public static class ToolboxTests
 {
@@ -39,10 +39,10 @@ public static class ToolboxTests
                 Check(path.PathTypes.All(t => t <= 1), "No Bezier segments");
             }
         }
-        var root = Path.Combine(Path.GetTempPath(), "WireShelf-toolbox-" + Guid.NewGuid().ToString("N"));
+        var root = Path.Combine(Path.GetTempPath(), "Polymita-toolbox-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root); var file = Path.Combine(root, "settings.json");
         var settings = ToolboxSettings.Load(file);
-        Check(!settings.Polylines && !settings.Highlight, "New settings leave native rendering unchanged");
+        Check(settings.Polylines && settings.WireVariant==1 && !settings.Highlight, "New settings retain the 0.8.4 defaults: adaptive polylines on, highlighting off");
         settings.Polylines = true; settings.Highlight = true; settings.SelectedArgb = Color.Blue.ToArgb(); settings.View = "Top"; settings.PanelWidth = 500;
         settings.Save(file); var saved = ToolboxSettings.Load(file);
         Check(saved.Polylines && saved.Highlight && saved.SelectedArgb == Color.Blue.ToArgb() && saved.View == "Top", "Round-trip tools preferences");

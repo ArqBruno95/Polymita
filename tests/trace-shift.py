@@ -10,7 +10,7 @@ class Trace(IMessageFilter):
             with open(path, 'a') as f:
                 f.write('msg={} key={} canvasFocus={} canFocus={} hostFocus={} activeForm={} activeControl={} interaction={}\n'.format(m.Msg,m.WParam,c.ContainsFocus,c.CanFocus,Instances.DocumentEditor.ContainsFocus,Form.ActiveForm,Instances.DocumentEditor.ActiveControl,c.ActiveInteraction))
         return False
-if 'WireShelfShiftTrace' in scriptcontext.sticky:
-    Application.RemoveMessageFilter(scriptcontext.sticky['WireShelfShiftTrace'])
-scriptcontext.sticky['WireShelfShiftTrace'] = Trace()
-Application.AddMessageFilter(scriptcontext.sticky['WireShelfShiftTrace'])
+if 'PolymitaShiftTrace' in scriptcontext.sticky:
+    Application.RemoveMessageFilter(scriptcontext.sticky['PolymitaShiftTrace'])
+scriptcontext.sticky['PolymitaShiftTrace'] = Trace()
+Application.AddMessageFilter(scriptcontext.sticky['PolymitaShiftTrace'])

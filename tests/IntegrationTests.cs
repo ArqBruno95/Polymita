@@ -6,7 +6,7 @@ using System;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using WireShelf;
+using Polymita;
 
 public static class IntegrationTests
 {

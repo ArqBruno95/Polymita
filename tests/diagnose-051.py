@@ -8,7 +8,7 @@ canvas=Instances.ActiveCanvas
 sc.sticky['Z051View']=canvas.Viewport.Duplicate()
 lines=[]
 for a in System.AppDomain.CurrentDomain.GetAssemblies():
- r=a.GetType('WireShelf.ShelfRuntime')
+ r=a.GetType('Polymita.ShelfRuntime')
  if r is None: continue
  lines.append(a.FullName)
  field=r.GetField('toolbox',flags)

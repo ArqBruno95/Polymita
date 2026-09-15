@@ -1,4 +1,4 @@
-# Verificación de WireShelf 0.2.0
+# Verificación de Polymita 0.2.0
 
 Windows, Rhino 8.34.26223.11001, runtime .NET 8.0.14. 11–12 de septiembre de 2026.
 
@@ -20,7 +20,7 @@ Windows, Rhino 8.34.26223.11001, runtime .NET 8.0.14. 11–12 de septiembre de 2
 
 Rhino cerró inesperadamente al probar el menú contextual en una compilación intermedia. El registro .NET identificó ObjectDisposedException sobre ContextMenuStrip dentro de ToolStripManager.ModalMenuFilter. La versión corregida difiere Dispose hasta el siguiente ciclo de mensajes, después de que termine el cierre y se entregue Click. El cierre no afectó a la biblioteca guardada; no se encontró una copia de recuperación reciente de la definición sin guardar que estaba abierta.
 
-El doble Shift utiliza WH_KEYBOARD solo en el hilo de interfaz de Rhino: IMessageFilter no recibe las teclas bajo el bucle nativo de este host. El manejador se desinstala al apagar WireShelf; las teclas siguen llegando a Grasshopper. Se limita a Grasshopper activo con el cursor sobre el lienzo y no registra texto ni usa un gancho global.
+El doble Shift utiliza WH_KEYBOARD solo en el hilo de interfaz de Rhino: IMessageFilter no recibe las teclas bajo el bucle nativo de este host. El manejador se desinstala al apagar Polymita; las teclas siguen llegando a Grasshopper. Se limita a Grasshopper activo con el cursor sobre el lienzo y no registra texto ni usa un gancho global.
 
 ## Límites
 
@@ -30,7 +30,7 @@ Los GUID e iconos están verificados, pero no se han evaluado todas las operacio
 
 Se repitieron las 26 comprobaciones de integración en la compilación corregida. Se abrió y cerró su menú contextual sin el fallo anterior y, después, un clic insertó Merge con Flatten en ambos inputs. Rhino siguió respondiendo. La selección exacta de puertos se verifica en las pruebas de integración; la automatización de escritorio devuelve el foco al propietario al pulsar sobre los menús emergentes.
 
-## Nítido 0.4.0 — 2026-09-12
+## Polymita 0.4.0 — 2026-09-12
 
 Entorno: Rhino 8.34 / Windows, .NET 8.0.14. Compilación Release sin errores.
 

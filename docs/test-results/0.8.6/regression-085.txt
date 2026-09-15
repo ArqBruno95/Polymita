@@ -1,0 +1,49 @@
+PASS Alignment extends Grasshopper's native drag implementation
+PASS Both port axes capture at 31 screen pixels, zoom 0.5
+PASS Both port axes release beyond 32 screen pixels, zoom 0.5
+PASS Edges cannot capture at 9 screen pixels, zoom 0.5
+PASS Edges capture at 7 screen pixels, zoom 0.5
+PASS Ports keep priority even against an exact edge alignment, zoom 0.5
+PASS Both port axes capture at 31 screen pixels, zoom 1
+PASS Both port axes release beyond 32 screen pixels, zoom 1
+PASS Edges cannot capture at 9 screen pixels, zoom 1
+PASS Edges capture at 7 screen pixels, zoom 1
+PASS Ports keep priority even against an exact edge alignment, zoom 1
+PASS Both port axes capture at 31 screen pixels, zoom 2
+PASS Both port axes release beyond 32 screen pixels, zoom 2
+PASS Edges cannot capture at 9 screen pixels, zoom 2
+PASS Edges capture at 7 screen pixels, zoom 2
+PASS Ports keep priority even against an exact edge alignment, zoom 2
+PASS Nearest input 0 keeps only its own connected endpoint
+PASS The selected moving grip, not a different port, supplies the alignment height
+PASS Nearest input 2 keeps only its own connected endpoint
+PASS The selected moving grip, not a different port, supplies the alignment height
+PASS Nearest output 0 keeps only its own connected endpoint
+PASS The selected moving grip, not a different port, supplies the alignment height
+PASS Nearest output 2 keeps only its own connected endpoint
+PASS The selected moving grip, not a different port, supplies the alignment height
+PASS An unwired input cannot displace the nearest real wire
+PASS Multiple selection uses the grabbed component's wire
+PASS Dragging straightens the wire selected by the grab point
+PASS Cancelling the port-aligned move restores its original pivot
+PASS An unconnected moving object aligns its centres to stationary input and output vertices
+PASS Plain drag moved before pressing Alt, group=False
+PASS Alt restores original and defers copying to native release, group=False
+PASS Alt release matches unmodified Grasshopper's copy result, group=False
+PASS Native copy uses the original mouse-down offset
+PASS Single Undo removes native Alt copy, group=False
+PASS Redo restores native Alt copy, group=False
+PASS Plain drag moved before pressing Alt, group=True
+PASS Alt restores original and defers copying to native release, group=True
+PASS Alt release matches unmodified Grasshopper's copy result, group=True
+PASS Native copy uses the original mouse-down offset
+PASS Native group copy retains the members' internal wire
+PASS Single Undo removes native Alt copy, group=True
+PASS Redo restores native Alt copy, group=True
+PASS A second Alt tap returns to native move without a duplicate
+PASS Native move after Alt toggling retains single-step Undo
+PASS Escape cancels native copy mode
+PASS Escape leaves the original at its initial position with no copy
+PASS Operation icon resources have been removed
+PASS Existing explicit operation shortcuts remain available
+48 regression checks passed.
