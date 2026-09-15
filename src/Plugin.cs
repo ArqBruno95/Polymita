@@ -196,7 +196,7 @@ namespace WireShelf
                 MessageBox.Show(host, "Polymita 0.8.0 · Rhino 8 / Windows\n\n" +
                     "Drag a wire from an input or output and release over empty canvas. You can also click a port and then empty canvas.\n\n" +
                     "Double Shift: insert without a wire at the cursor. Click an icon to insert; right-click to choose a port.\n\n" +
-                    "Ctrl + left drag cuts wires. Shift while dragging constrains the move; Alt leaves a copy behind.\n\n" +
+                    "Ctrl + left drag cuts wires. Shift while dragging constrains the move.\n\n" +
                     "Every shortcut can be rebound from Customise shortcuts.\n\n" +
                     "Inspired by QuickConnection, WiresRenderer and Sunglasses.\nGPL-3.0-or-later · License and source included in the package.", "Polymita");
             });
@@ -357,7 +357,7 @@ namespace WireShelf
         {
             if (shiftFilter != null) shiftFilter.Cancel();
             var canvas = (GH_Canvas)sender;
-            if (!Enabled || e.Button != MouseButtons.Left || ModifierKeysHeld() || canvas.Document == null) return;
+            if (!Enabled || e.Button != MouseButtons.Left || e.Clicks > 1 || ModifierKeysHeld() || canvas.Document == null) return;
             // Do not take over rewiring or another extension's interaction.
             var interaction = canvas.ActiveInteraction;
             if (interaction == null || interaction.GetType() != typeof(GH_WireInteraction)) return;

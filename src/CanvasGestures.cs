@@ -100,6 +100,10 @@ namespace WireShelf
         void Down(object sender, MouseEventArgs e)
         {
             if (e.Button != MouseButtons.Left || canvas.Document == null) return;
+            // The second press of a double-click lands on an object the first one just
+            // selected, so taking the interaction there would swallow the gesture before
+            // Grasshopper could act on it, which is what stopped relays dissolving.
+            if (e.Clicks > 1) return;
             if (StartCut(new GH_CanvasMouseEvent(canvas.Viewport,e), Control.ModifierKeys)) return;
             StartAlign(e);
         }
@@ -123,14 +127,15 @@ namespace WireShelf
         }
         void StartAlign(MouseEventArgs e)
         {
-            // Ctrl belongs to the cutter and to native multiselection. Shift constrains
-            // the move and Alt copies, so both have to reach the drag interaction.
+            // Ctrl belongs to the cutter and to native multiselection, and Alt to
+            // Grasshopper's own copy-drag. Only a plain drag, or Shift to constrain it,
+            // is ours; Shift stays because Grasshopper binds nothing to it while dragging.
             var modifiers = Control.ModifierKeys & (Keys.Control|Keys.Shift|Keys.Alt);
-            if ((modifiers & Keys.Control) != 0) return;
+            if ((modifiers & (Keys.Control|Keys.Alt)) != 0) return;
             if (!SnapEnabled && modifiers == Keys.None) return;
-            // Grasshopper starts its drag before this event runs, but not for every
-            // modifier. Taking over a null interaction as well is safe as long as the
-            // press really landed on something already selected, which is a drag.
+            // Grasshopper starts its drag before this event runs. Taking over a null
+            // interaction as well is safe as long as the press really landed on
+            // something already selected, which is a drag.
             var live = canvas.ActiveInteraction;
             if (live != null && live.GetType() != typeof(GH_DragInteraction)) return;
             var ev = new GH_CanvasMouseEvent(canvas.Viewport,e);
@@ -270,21 +275,7 @@ namespace WireShelf
         readonly GH_UndoRecord undo;
         float? guideX, guideY;
         int kindX, kindY;
-        bool committed, moved, copied;
-        // Alt is read while the drag runs rather than when it starts: Grasshopper does
-        // not always begin a drag under a held modifier, and reading it here also lets
-        // the key be pressed part-way through, the way a copy-drag usually works.
-        // The originals go back to where they started, a copy is left there, and the
-        // originals carry on under the cursor.
-        void LeaveCopy()
-        {
-            if (copied || (Control.ModifierKeys & Keys.Alt) == 0) return;
-            copied = true;
-            Position(PointF.Empty);
-            if (!Ui.Try(delegate { CanvasOperations.DuplicateInPlace(doc); })) return;
-            doc.DeselectAll();
-            foreach (var obj in objects) obj.Attributes.Selected = true;
-        }
+        bool committed, moved;
         static void Nearest(PointF grip, PointF cursor, ref float best, ref float anchorY)
         {
             var gap=ShelfRuntime.Distance(grip,cursor);
@@ -367,7 +358,6 @@ namespace WireShelf
             if(sender.Document!=doc) return GH_ObjectResponse.Release;
             var delta=new PointF(e.CanvasX-CanvasPointDown.X,e.CanvasY-CanvasPointDown.Y);
             if(!moved && Math.Abs(delta.X)*sender.Viewport.Zoom<3 && Math.Abs(delta.Y)*sender.Viewport.Zoom<3) return GH_ObjectResponse.Handled;
-            LeaveCopy();
             // Shift picks the axis from the raw drag and holds the other one still,
             // before and after snapping, so alignment cannot reintroduce the movement
             // the modifier just took away.

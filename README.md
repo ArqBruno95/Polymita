@@ -4,6 +4,10 @@ A toolbox for clear, fast work in **Grasshopper for Rhino 8 on Windows**.
 
 Polymita is the scientific name used internationally for Cuba's painted snails. The identity uses a geometric spiral shell, shell yellow, coral, cream and dark ink. English common name: **Cuban painted snail**. [Natural-history reference](https://www.amnh.org/explore/news-blogs/cuba-painted-snails).
 
+## Changes in 0.8.4
+
+- **Alt-dragging a copy** and **double-clicking a relay** are Grasshopper's own gestures again. The alignment drag was taking the interaction on any left press that landed on something already selected, which includes the second press of a double-click and a press with Alt held, so Grasshopper never saw either gesture. It now stands aside for both.
+
 ## Changes in 0.8.3
 
 - **Segmented wires** are on by default, in the adaptive three-segment style. A settings file written before that carries an explicit off, so it is switched on once and stays under your control afterwards. If the patch cannot be installed the option is left off and the reason is shown in the Wires tab, rather than as a dialog on every start.
@@ -27,7 +31,7 @@ Polymita is the scientific name used internationally for Cuba's painted snails. 
 - **Adaptive wires are filleted.** The two corners are rounded. When the input sits left of the output the stub is a short fixed length, which turns the wire into a straight run with a tight rounded hook at each end.
 - **Alt+A / Alt+D** insert a generic **Data** container before or after the selection. Each existing wire on that side gets its own container spliced into it, the way a relay sits in a wire; a port with no wire gets a container joined to it. Containers are drawn as their name rather than their icon.
 - **Alt+G** adds to every group each object whose area overlaps it. With nothing selected it tidies the whole definition; select groups to narrow it to those.
-- **Shift** while dragging constrains the move to horizontal or vertical. **Alt** leaves a copy behind; it is read while the drag runs, so it can be pressed before or part-way through.
+- **Shift** while dragging constrains the move to horizontal or vertical.
 - Snapping now also aligns the moving centre with the grips of components the selection is wired to, and reaches four times as far on the horizontal centre axis, which is the alignment a drag is usually after. Guides are coloured: green for an edge, red for a centre axis, blue for a connected port.
 - **Alt+Q** places the copy immediately beside the original rather than hunting for clear space beyond every obstacle.
 - Component captions are on by default and are painted behind objects, so an overlapping component stays readable.

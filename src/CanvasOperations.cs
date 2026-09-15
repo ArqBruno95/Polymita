@@ -181,10 +181,7 @@ namespace WireShelf
             }
             return ids;
         }
-        public static List<IGH_DocumentObject> Duplicate(GH_Document doc) { return Copy(doc, true); }
-        // Alt-dragging leaves a copy behind, so the copy has to land exactly on top.
-        public static List<IGH_DocumentObject> DuplicateInPlace(GH_Document doc) { return Copy(doc, false); }
-        private static List<IGH_DocumentObject> Copy(GH_Document doc, bool beside)
+        public static List<IGH_DocumentObject> Duplicate(GH_Document doc)
         {
             var ids = ExpandSelection(doc);
             if (ids.Count == 0) throw new InvalidOperationException("Select the components or groups to duplicate.");
@@ -207,7 +204,7 @@ namespace WireShelf
                 var bounds = copy.BoundingBox(false);
                 // Straight beside the original, overlapping whatever is already there.
                 // Hunting for clear space threw the copy far from what it was copied from.
-                var offset = beside ? bounds.Width + 25 : 0;
+                var offset = bounds.Width + 25;
                 copy.MutateAllIds();
                 var clones = copy.Objects.ToList();
                 foreach (var obj in clones.Where(o=>!(o is GH_Group)))
