@@ -22,6 +22,15 @@ namespace Polymita {
    }
    return found.ToArray();
   }
+  // What Rhino is asking, without the bracketed option list: those become buttons
+  // of their own, and repeating them in front of the box would only cost width.
+  internal static string Question(string prompt) {
+   if(string.IsNullOrEmpty(prompt))return "Command";
+   var open=prompt.IndexOf('(');
+   var head=(open>=0?prompt.Substring(0,open):prompt).Trim();
+   if(head.Length==0)return "Command";
+   return head.EndsWith(":")?head:head+":";
+  }
   // What to type for an option. Name=Value and Name=On are chosen by their name
   // alone: Rhino then cycles the toggle or asks for the value, exactly as it does
   // when the option is clicked in Rhino's own command line.

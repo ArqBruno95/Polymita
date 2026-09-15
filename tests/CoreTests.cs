@@ -83,6 +83,20 @@ public static class CoreTests
                 "an option is chosen by typing its name, never its value");
             Check(CommandOptions.Parse("Point ( Mode=( Free Bisector ) Cap=Flat )").SequenceEqual(new[] { "Mode=", "Free", "Bisector", "Cap=Flat" }),
                 "a nested value list does not swallow the options after it");
+            Check(CommandOptions.Question("Start of line ( BothSides Normal Angled )") == "Start of line:"
+                && CommandOptions.Question("Command") == "Command:" && CommandOptions.Question("Radius:") == "Radius:"
+                && CommandOptions.Question(null) == "Command" && CommandOptions.Question("( Only Options )") == "Command",
+                "the prompt in front of the box is the question alone, never the option list");
+
+            // Both strips of the Rhino pane are folded away until the user opens one.
+            var pane = new ToolboxSettings();
+            Check(!pane.ShowCommandLine && !pane.ShowModelAids, "the command line and the modelling aids start hidden");
+            pane.ShowModelAids = true; pane.Save(settingsPath);
+            var kept = ToolboxSettings.Load(settingsPath);
+            Check(kept.ShowModelAids && !kept.ShowCommandLine, "an opened strip stays open across a restart");
+            File.WriteAllText(settingsPath, "{\"PanelWidth\":420}");
+            var before = ToolboxSettings.Load(settingsPath);
+            Check(!before.ShowCommandLine && !before.ShowModelAids, "settings written before the strips existed keep both folded");
 
             Console.WriteLine(count + " core checks passed."); return 0;
         }

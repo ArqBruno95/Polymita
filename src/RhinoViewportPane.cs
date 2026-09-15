@@ -7,10 +7,10 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 namespace Polymita {
- // Rhino's own modelling aids around a real Rhino view, laid out where Rhino puts
- // them: the view and display pickers on top, the command line and its history
- // directly beneath them, and the object snaps, the status toggles and the
- // distance readout along the bottom.
+ // A real Rhino view with Rhino's own command line and modelling aids around it,
+ // laid out where Rhino puts them. Both strips are folded away until asked for:
+ // the viewport is what this panel is for, and everything else is one arrow wide
+ // until the arrow is clicked, after which it stays open until it is clicked back.
  internal sealed class RhinoViewportPane : UserControl {
   internal readonly NativeRhinoViewHost ViewControl;
   readonly ComboBox views=new ComboBox { DropDownStyle=ComboBoxStyle.DropDownList,AccessibleName="View direction" };
@@ -18,10 +18,11 @@ namespace Polymita {
   readonly ToolTip tips=new ToolTip();
   readonly Timer pulse=new Timer { Interval=200 };
   readonly RhinoCommandLine commandLine;
-  readonly AidStrip snaps,status;
+  readonly AidStrip aids;
+  readonly Disclosure commandArrow,aidsArrow;
   readonly Label distance=new Label { Text="",TextAlign=ContentAlignment.MiddleCenter,AutoSize=false,
-   Size=new Size(104,24),BorderStyle=BorderStyle.FixedSingle,BackColor=Color.White,
-   Margin=new Padding(0,0,8,0),AccessibleName="Distance from the last picked point" };
+   Size=new Size(86,20),BorderStyle=BorderStyle.FixedSingle,BackColor=Color.White,
+   Font=new Font("Segoe UI",8F),AccessibleName="Distance from the last picked point" };
   readonly LengthReadout length=new LengthReadout();
   readonly GH_Canvas canvas; readonly ToolboxSettings settings;
 
@@ -35,7 +36,7 @@ namespace Polymita {
    foreach(var mode in available)modes.Items.Add(mode);
    modes.SelectedItem=available.FirstOrDefault(m=>m.Id==settings.DisplayMode)??available.FirstOrDefault(m=>m.Id==DisplayModeDescription.ShadedId);
 
-   var bar=new TableLayoutPanel { Dock=DockStyle.Top,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,Padding=new Padding(10,8,10,8),ColumnCount=2,RowCount=2 };
+   var bar=new TableLayoutPanel { Dock=DockStyle.Top,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,Padding=new Padding(10,8,10,6),ColumnCount=2,RowCount=2 };
    bar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));bar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));
    bar.RowStyles.Add(new RowStyle(SizeType.AutoSize));bar.RowStyles.Add(new RowStyle(SizeType.AutoSize));
    bar.Controls.Add(new Label {Text="VIEW",AutoSize=true,ForeColor=Ui.Muted,Margin=new Padding(0,0,8,4)},0,0);
@@ -44,37 +45,40 @@ namespace Polymita {
    bar.Controls.Add(views,0,1);bar.Controls.Add(modes,1,1);
    views.DropDownWidth=180;modes.DropDownWidth=280;
 
-   commandLine=new RhinoCommandLine(tips,delegate { return ViewControl.HasView; },
-    delegate { ViewControl.ActivateView(); },Fit);
+   commandLine=new RhinoCommandLine(tips,delegate { return ViewControl.HasView; },delegate { ViewControl.ActivateView(); });
+   commandArrow=new Disclosure("Command",settings.ShowCommandLine,tips,"Show or hide Rhino's command line and its history.");
+   var head=Fold(DockStyle.Top,commandArrow,commandLine,true);
 
-   snaps=new AidStrip(ModelAids.Snaps(),tips);
-   status=new AidStrip(ModelAids.Status(),tips);
+   // One row, grouped by subject with a hairline between groups: the snaps, then
+   // the status switches, then the distance Rhino would show in its own pane.
+   aids=new AidStrip(tips);
+   aids.AddGroup(ModelAids.Snaps());
+   aids.AddGroup(ModelAids.Status());
+   aids.AddReadout(distance);
    tips.SetToolTip(distance,"Distance from the last point picked in this view, in the document's units.");
-
-   var readouts=new TableLayoutPanel { Dock=DockStyle.Top,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,ColumnCount=2,RowCount=1,Margin=Padding.Empty,Padding=Padding.Empty };
-   readouts.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-   readouts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
-   readouts.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-   readouts.Controls.Add(distance,0,0);readouts.Controls.Add(status,1,0);
-
-   var footer=new TableLayoutPanel { Dock=DockStyle.Bottom,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,ColumnCount=1,RowCount=2,Padding=new Padding(10,6,10,8) };
-   footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
-   footer.RowStyles.Add(new RowStyle(SizeType.AutoSize));footer.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-   footer.Controls.Add(snaps,0,0);footer.Controls.Add(readouts,0,1);
+   aidsArrow=new Disclosure("Osnap, Ortho, distance",settings.ShowModelAids,tips,"Show or hide Rhino's object snaps, status switches and distance readout.");
+   var foot=Fold(DockStyle.Bottom,aidsArrow,aids,false);
 
    // Docking is resolved from the last control added to the first, so the order
-   // here reads backwards: the bar claims the top edge, the command line the strip
-   // below it, the footer the bottom, and the view keeps what is left.
-   Controls.Add(ViewControl);Controls.Add(footer);Controls.Add(commandLine);Controls.Add(bar);
+   // here reads backwards: the pickers claim the top edge, the command line the
+   // strip below them, the aids the bottom, and the view keeps all the rest.
+   Controls.Add(ViewControl);Controls.Add(foot);Controls.Add(head);Controls.Add(bar);
 
    views.SelectedIndexChanged+=delegate { Ui.Safe(ApplyView); };
    modes.SelectedIndexChanged+=delegate { Ui.Safe(ApplyMode); };
    ViewControl.Ready+=delegate { ApplyView();ApplyMode();length.Viewport=ViewControl.ViewportId; };
    length.Changed+=delegate(string text) { distance.Text=text==null?"":text; };
-   length.Enabled=true;
+   length.Enabled=aidsArrow.Open;
+   commandArrow.Toggled+=delegate { Ui.Safe(delegate {
+    commandLine.Visible=commandArrow.Open;settings.ShowCommandLine=commandArrow.Open;ShelfRuntime.SaveToolboxSettings(); }); };
+   aidsArrow.Toggled+=delegate { Ui.Safe(delegate {
+    aids.Visible=aidsArrow.Open;
+    // No reason to watch every mouse move in every Rhino view while the readout
+    // that would show the result is folded away.
+    length.Enabled=aidsArrow.Open;
+    settings.ShowModelAids=aidsArrow.Open;ShelfRuntime.SaveToolboxSettings(); }); };
    // Rhino announces neither a prompt change nor a toggled aid, so the panel asks.
-   // Every read is a property on Rhino's settings and nothing is written unless it
-   // actually differs, so an idle pane does no work Rhino can see.
+   // A folded strip is asked nothing at all.
    pulse.Tick+=delegate {
     try { Poll(); }
     catch(Exception ex) {
@@ -87,12 +91,24 @@ namespace Polymita {
    pulse.Start();
   }
 
+  // An arrow and the strip it governs, in the smallest box that holds both: a
+  // folded strip contributes no height at all, so only the arrow is left.
+  static TableLayoutPanel Fold(DockStyle edge,Disclosure arrow,Control strip,bool arrowFirst) {
+   var box=new TableLayoutPanel { Dock=edge,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,
+    ColumnCount=1,RowCount=2,Margin=Padding.Empty,Padding=new Padding(8,0,8,2) };
+   box.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
+   box.RowStyles.Add(new RowStyle(SizeType.AutoSize));box.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+   strip.Visible=arrow.Open;
+   box.Controls.Add(arrow,0,arrowFirst?0:1);
+   box.Controls.Add(strip,0,arrowFirst?1:0);
+   return box;
+  }
+
   void Poll() {
    var id=ViewControl.ViewportId;
    if(length.Viewport!=id)length.Viewport=id;
-   commandLine.Poll();
-   snaps.Sync();
-   status.Sync();
+   if(commandArrow.Open)commandLine.Poll();
+   if(aidsArrow.Open)aids.Sync();
   }
 
   internal void ApplyView() {
@@ -105,6 +121,8 @@ namespace Polymita {
    settings.DisplayMode=mode.Id;
    if(ViewControl.HasView) { ViewControl.Viewport.DisplayMode=mode;ViewControl.RedrawView(); }
   }
+  // Frames Grasshopper's preview together with Rhino's own geometry, which no
+  // single Rhino command does. Used when the view direction changes.
   internal void Fit() {
    if(!ViewControl.HasView)return;
    var bounds=BoundingBox.Empty;

@@ -82,25 +82,46 @@ namespace Polymita {
   }
  }
 
- // A row of Rhino's toggles. It keeps no state of its own: every refresh reads
- // Rhino back, so the row cannot drift from what Rhino is actually doing.
+ // One thin row of Rhino's toggles, grouped by subject with a hairline between
+ // groups, so the snaps, the status switches and the readout read apart without
+ // each claiming a line of the viewport. It keeps no state of its own: every
+ // refresh reads Rhino back, so the row cannot drift from what Rhino is doing.
  internal sealed class AidStrip : FlowLayoutPanel {
   readonly List<CheckBox> buttons=new List<CheckBox>();
   readonly List<ModelAid> aids=new List<ModelAid>();
   readonly ToolTip tips;
+  static readonly Color Hairline=Color.FromArgb(214,197,158);
   bool loading;
-  internal AidStrip(ModelAid[] entries,ToolTip tips) {
+  internal AidStrip(ToolTip tips) {
    this.tips=tips;
    Dock=DockStyle.Top;AutoSize=true;AutoSizeMode=AutoSizeMode.GrowAndShrink;
-   WrapContents=true;FlowDirection=FlowDirection.LeftToRight;Margin=Padding.Empty;Padding=Padding.Empty;
-   foreach(var entry in entries) Add(entry);
-   Sync();
+   WrapContents=true;FlowDirection=FlowDirection.LeftToRight;
+   Font=new System.Drawing.Font("Segoe UI",8F);Margin=Padding.Empty;Padding=Padding.Empty;
+  }
+  // AutoSize on a button-shaped CheckBox measures the caption short and clips it,
+  // so each button is given the width its own text actually needs.
+  static Size Fits(string text,System.Drawing.Font font) {
+   var size=TextRenderer.MeasureText(text,font);
+   return new Size(size.Width+9,20);
+  }
+  void Divide() {
+   if(Controls.Count==0)return;
+   Controls.Add(new Panel { Width=1,Height=14,BackColor=Hairline,Margin=new Padding(5,3,5,3) });
+  }
+  internal void AddGroup(ModelAid[] group) {
+   Divide();
+   foreach(var aid in group) Add(aid);
+  }
+  internal void AddReadout(Control readout) {
+   Divide();
+   readout.Margin=new Padding(0,0,2,2);
+   Controls.Add(readout);
   }
   void Add(ModelAid aid) {
-   var button=new CheckBox { Text=aid.Text,Appearance=Appearance.Button,AutoSize=true,FlatStyle=FlatStyle.Flat,
+   var button=new CheckBox { Text=aid.Text,Appearance=Appearance.Button,AutoSize=false,FlatStyle=FlatStyle.Flat,
     BackColor=Color.White,ForeColor=Ui.Ink,TextAlign=ContentAlignment.MiddleCenter,
-    Margin=new Padding(0,0,3,3),Padding=new Padding(5,2,5,2),AccessibleName=aid.Text };
-   button.FlatAppearance.BorderColor=Color.FromArgb(214,197,158);
+    Size=Fits(aid.Text,Font),Margin=new Padding(0,0,2,2),AccessibleName=aid.Text };
+   button.FlatAppearance.BorderColor=Hairline;
    button.FlatAppearance.CheckedBackColor=Ui.Accent;
    tips.SetToolTip(button,aid.Tip);
    var captured=aid;
@@ -127,6 +148,29 @@ namespace Polymita {
     }
    }
    finally { loading=false; }
+  }
+ }
+
+ // The arrow that shows or hides a strip. It stays where it was last put, here
+ // and across restarts, rather than folding away again on its own.
+ internal sealed class Disclosure : Button {
+  readonly string caption;
+  bool open;
+  internal event Action Toggled;
+  internal Disclosure(string caption,bool open,ToolTip tips,string tip) {
+   this.caption=caption;this.open=open;
+   AutoSize=true;AutoSizeMode=AutoSizeMode.GrowAndShrink;FlatStyle=FlatStyle.Flat;
+   BackColor=Ui.Paper;ForeColor=Ui.Muted;Font=new System.Drawing.Font("Segoe UI",8F);
+   TextAlign=ContentAlignment.MiddleLeft;Margin=Padding.Empty;Padding=new Padding(2,0,6,0);MinimumSize=new Size(0,18);
+   FlatAppearance.BorderSize=0;FlatAppearance.MouseOverBackColor=Color.FromArgb(240,232,214);
+   tips.SetToolTip(this,tip);
+   Label();
+   Click+=delegate { open=!open;Label();if(Toggled!=null)Toggled(); };
+  }
+  internal bool Open { get { return open; } }
+  void Label() {
+   Text=(open?"▾ ":"▸ ")+caption;
+   AccessibleName=(open?"Hide ":"Show ")+caption;
   }
  }
 

@@ -23,6 +23,10 @@ namespace Polymita
         [DataMember] public float ComponentTextSize = 12;
         [DataMember] public float GroupTextSize = 26;
         [DataMember] public float GroupZoom = 0.65F;
+        // Both strips of the Rhino pane stay folded until the user opens them, and
+        // then stay open. False is what an absent member deserializes to anyway.
+        [DataMember] public bool ShowCommandLine;
+        [DataMember] public bool ShowModelAids;
         [DataMember] public bool CutWires = true;
         [DataMember] public bool SnapAlign = true;
         // DataContractJsonSerializer builds the instance without running field

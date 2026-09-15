@@ -8,7 +8,10 @@ Favorites, configured component recipes and canvas tools for **Grasshopper in Rh
 
 **Wire colour is no longer Polymita's business.** The whole highlight subsystem is gone: the `GH_Skin` selection colours it saved and restored, the stored preference and its colour, the Wires tab checkbox and colour picker, and every call site. Polymita draws the path a wire follows; what colour it is drawn in is Grasshopper's decision alone.
 
-**Rhino's modelling aids in the Grasshopper viewport.** The pane now carries Rhino's own command line directly under the view and display pickers: the live prompt, the command history, and the options Rhino is currently offering as buttons that submit exactly what typing the option name would, so `Line` offers BothSides, Normal, Angled and the rest. Along the bottom, where Rhino puts them, are the object snap bar (End, Near, Point, Mid, Cen, Int, Perp, Tan, Quad, Knot, Vertex, Project, Disable, with right-click for one snap alone), the status toggles (Grid Snap, Ortho, Planar, Osnap, SmartTrack, Gumball) and a distance readout from the last point picked in that view. Every toggle reads and writes Rhino's own setting, so one flipped from Rhino's status bar or an F-key shows here and the other way round.
+**Rhino's modelling aids in the Grasshopper viewport, behind two arrows.** The viewport is what the pane is for, so both new strips are folded away and cost one arrow each until they are opened; an opened strip stays open, here and after a restart.
+
+- **▸ Command**, under the view and display pickers, unfolds Rhino's command line: the history, the live prompt in front of the box the way Rhino writes it, and the options Rhino is offering as buttons that submit exactly what typing the option name would, so `Line` offers BothSides, Normal, Angled and the rest. Enter sends, as it does in Rhino; there is no Run button, and the bracketed option list is left out of the prompt because those are the buttons.
+- **▸ Osnap, Ortho, distance**, along the bottom, unfolds one row: the object snaps (End, Near, Point, Mid, Cen, Int, Perp, Tan, Quad, Knot, Vertex, Project, Disable, with right-click for one snap alone), then a hairline, then the status toggles (Grid Snap, Ortho, Planar, Osnap, SmartTrack, Gumball), then a hairline, then the distance from the last point picked in that view. Every toggle reads and writes Rhino's own setting, so one flipped from Rhino's status bar or an F-key shows here and the other way round.
 
 Three earlier faults in canvas interaction, with one shared consequence: the canvas stopped reflecting what was selected.
 
@@ -58,7 +61,7 @@ The library editor uses a draft until **Save**. Add/reorder/rename sections, com
 - Adaptive rounded polylines and orthogonal wire styles, with native hit testing. Wire colour stays entirely under Grasshopper's control.
 - Component labels, optional nicknames and large group labels at low zoom.
 - Component finder and profiler, with navigation to results.
-- A native Rhino viewport pane with view and display-mode choices, native selection, and Rhino's own command line, object snaps, status toggles and distance readout.
+- A native Rhino viewport pane with view and display-mode choices and native selection. Two arrows unfold Rhino's own command line and its object snaps, status toggles and distance readout; both start folded.
 - Containers before/after selections, selection connections, duplication beside the original, and adding overlapping objects to groups.
 
 ### Default shortcuts

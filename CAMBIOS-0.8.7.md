@@ -104,3 +104,31 @@ NuGet del SDK de Rhino 8.34.26223.11001.
 2. Sustituye el `Polymita.gha` anterior por el nuevo en la carpeta Libraries de
    Grasshopper. Deja una sola versión activa, también en las subcarpetas.
 3. Abre Rhino y Grasshopper. El menú Polymita debe indicar la versión 0.8.7.
+
+## Revisión de la ventana del viewport
+
+Sobre la captura anotada:
+
+- **Fuera lo tachado.** Desaparece la línea con la palabra «Command», que solo
+  repetía lo que ya decía la caja, y desaparecen los botones **Run** y **Fit**.
+  Enter envía, igual que en Rhino. El encuadre conjunto de la vista de
+  Grasshopper y la geometría de Rhino que hacía «Fit» sigue ejecutándose al
+  cambiar la dirección de vista; si lo quieres a mano en algún sitio, dímelo.
+- **Todo lo nuevo, plegado.** La barra de Command con su historial y la fila de
+  ayudas de modelado empiezan **ocultas**. Cada una tiene su flecha: `▸ Command`
+  debajo de los selectores de vista y display, y `▸ Osnap, Ortho, distance` en el
+  borde inferior. Al pulsarla se despliega y **se queda así** hasta que la vuelvas
+  a pulsar, también al reiniciar Grasshopper.
+- **Coste plegado:** una flecha de unos 18 px en cada extremo. El resto es
+  viewport.
+- **Una sola fila, por temas.** Las ayudas van una al lado de otra, con una línea
+  fina de separación entre grupos: referencias a objeto │ interruptores de estado
+  │ distancia. Se reparten en varias líneas solo si el panel es estrecho.
+- **Botones sin recortar.** Los rótulos aparecían cortados («Disab», «SmartTra»)
+  porque `AutoSize` sobre un `CheckBox` con apariencia de botón mide el texto por
+  debajo. Ahora cada botón recibe el ancho que su propio texto necesita, con
+  cuerpo de 8 pt y 20 px de alto.
+- **El prompt va delante de la caja**, como lo escribe Rhino, y sin la lista de
+  opciones entre paréntesis: esas son los botones.
+- Mientras la fila está plegada no se observa el ratón de Rhino ni se consulta el
+  prompt: el panel solo pregunta por lo que está a la vista.
