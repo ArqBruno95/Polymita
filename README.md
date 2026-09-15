@@ -1,10 +1,16 @@
-# Polymita 0.8.6
+# Polymita 0.8.7
 
 Favorites, configured component recipes and canvas tools for **Grasshopper in Rhino 8 on Windows**.
 
 ## Changes in 0.8.7
 
-Three faults in canvas interaction, with one shared consequence: the canvas stopped reflecting what was selected.
+**Ports belong to Grasshopper again.** Clicking an input or output selects the component, as it always did in Grasshopper. Pressing on a port area is how Grasshopper itself starts a wire, and Polymita was answering the release that follows a plain click with `Ignore`, keeping the wire armed on the cursor. Grasshopper never saw that release, so nothing was selected and the next click went to the waiting wire, which read as an unresponsive ring around every port. A release that follows a press which never moved now goes straight back to Grasshopper, and the reach used to rule the palette out on a real drag is Grasshopper's own grip radius rather than a widened one. Releasing a dragged wire over empty canvas or a group still opens the palette.
+
+**Wire colour is no longer Polymita's business.** The whole highlight subsystem is gone: the `GH_Skin` selection colours it saved and restored, the stored preference and its colour, the Wires tab checkbox and colour picker, and every call site. Polymita draws the path a wire follows; what colour it is drawn in is Grasshopper's decision alone.
+
+**Rhino's modelling aids in the Grasshopper viewport.** The pane now carries Rhino's own command line directly under the view and display pickers: the live prompt, the command history, and the options Rhino is currently offering as buttons that submit exactly what typing the option name would, so `Line` offers BothSides, Normal, Angled and the rest. Along the bottom, where Rhino puts them, are the object snap bar (End, Near, Point, Mid, Cen, Int, Perp, Tan, Quad, Knot, Vertex, Project, Disable, with right-click for one snap alone), the status toggles (Grid Snap, Ortho, Planar, Osnap, SmartTrack, Gumball) and a distance readout from the last point picked in that view. Every toggle reads and writes Rhino's own setting, so one flipped from Rhino's status bar or an F-key shows here and the other way round.
+
+Three earlier faults in canvas interaction, with one shared consequence: the canvas stopped reflecting what was selected.
 
 - **Selection no longer stalls.** The alignment drag gathered its state for the whole definition inside its constructor, on every press, before the pointer had moved at all. That work now happens the first time a press actually becomes a drag, so an ordinary click costs nothing.
 - **A press can no longer end in an exception.** Mouse-down is guarded: if starting a gesture fails, the canvas is put back in a usable state and the reason is written to the Rhino command line, instead of the canvas being left mid-gesture holding no interaction and ignoring every later click. A press that arrives while a previous drag is somehow still live now ends that drag first.
@@ -40,7 +46,7 @@ Manual installation: place `release/Polymita.gha` in that folder, replacing the 
 
 ### Favorites and recipes
 
-Drag a wire from an input or output and release it over empty canvas or a group to open the palette. Click a favorite to insert it; right-click to choose a port or insert without a wire. You can also click a port and then the canvas. Double Shift opens favorites at the pointer without an existing wire. Search preserves section and item order, without filtering favorites by wire data type.
+Drag a wire from an input or output and release it over empty canvas or a group to open the palette. Click a favorite to insert it; right-click to choose a port or insert without a wire. Double Shift opens favorites at the pointer without an existing wire. Search preserves section and item order, without filtering favorites by wire data type.
 
 The library editor uses a draft until **Save**. Add/reorder/rename sections, components and text operations; move favorites between sections; import/export libraries; capture or update a configured component recipe. Recipes retain native component configuration while removing external connections from the saved copy. Import accepts ordinary JSON, including older exported libraries. New exports use `.polymita.json`.
 
@@ -49,10 +55,10 @@ The library editor uses a draft until **Save**. Add/reorder/rename sections, com
 - Ctrl + left drag on background cuts crossed visible wires, with feedback along the stroke. Ctrl-click on objects preserves native multiselection. One Undo restores the entire stroke; Escape cancels it.
 - Shift during ordinary dragging constrains movement to horizontal or vertical. Selections and nested groups translate together. Undo/Redo and Escape preserve original placement.
 - Alignment guides: green for edges, red for centre-to-centre, blue for input/output vertices.
-- Adaptive rounded polylines and orthogonal wire styles, native hit testing and optional selected-wire highlighting.
+- Adaptive rounded polylines and orthogonal wire styles, with native hit testing. Wire colour stays entirely under Grasshopper's control.
 - Component labels, optional nicknames and large group labels at low zoom.
 - Component finder and profiler, with navigation to results.
-- A native Rhino viewport pane, view/display-mode choices, native selection and commands.
+- A native Rhino viewport pane with view and display-mode choices, native selection, and Rhino's own command line, object snaps, status toggles and distance readout.
 - Containers before/after selections, selection connections, duplication beside the original, and adding overlapping objects to groups.
 
 ### Default shortcuts
@@ -106,6 +112,7 @@ Inside Rhino, run `tests/run-regression-086.py` with RunPythonScript for the cur
 | `CanvasOperations.cs` | Explicit selection operations and their Undo records |
 | `WireStyles.cs`, `CanvasLabels.cs`, `ComponentFinder.cs` | Wire drawing, labels and finder/profiler |
 | `Toolbox.cs`, `RhinoViewportPane.cs`, `NativeRhinoViewHost.cs` | Native Rhino viewport and tool UI |
+| `ModelAids.cs`, `RhinoCommandLine.cs`, `CommandOptions.cs` | Object snaps, status toggles, distance readout and Rhino's command line |
 | `Brand.cs`, `Ui.cs` | Icons and shared appearance |
 
 ## License

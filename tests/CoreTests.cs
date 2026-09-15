@@ -70,6 +70,20 @@ public static class CoreTests
             var legacy = ToolboxSettings.Load(settingsPath);
             Check(legacy.CutWires && legacy.SnapAlign, "settings written before the gestures existed keep both enabled");
             Check(legacy.View == "Top", "legacy settings keep their stored values");
+
+            // Rhino's Line prompt, verbatim, with every option it offers.
+            var line = CommandOptions.Parse("Start of line ( BothSides Normal Angled Vertical FourPoint Bisector Perpendicular Tangent Extension )");
+            Check(line.SequenceEqual(new[] { "BothSides", "Normal", "Angled", "Vertical", "FourPoint", "Bisector", "Perpendicular", "Tangent", "Extension" }),
+                "every option Rhino offers is read from the prompt, in Rhino's order");
+            Check(CommandOptions.Parse("Start of line").Length == 0 && CommandOptions.Parse(null).Length == 0 && CommandOptions.Parse("Radius <5.0>").Length == 0,
+                "a prompt offering nothing produces no options");
+            Check(CommandOptions.Parse("Select objects ( Radius=5 Both=Yes )").SequenceEqual(new[] { "Radius=5", "Both=Yes" }),
+                "options carrying a value keep it for the button caption");
+            Check(CommandOptions.Keystrokes("Radius=5") == "Radius" && CommandOptions.Keystrokes("BothSides") == "BothSides" && CommandOptions.Keystrokes(null) == "",
+                "an option is chosen by typing its name, never its value");
+            Check(CommandOptions.Parse("Point ( Mode=( Free Bisector ) Cap=Flat )").SequenceEqual(new[] { "Mode=", "Free", "Bisector", "Cap=Flat" }),
+                "a nested value list does not swallow the options after it");
+
             Console.WriteLine(count + " core checks passed."); return 0;
         }
         catch (Exception ex) { Console.Error.WriteLine(ex); return 1; }

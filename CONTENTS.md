@@ -7,7 +7,7 @@
 - `lib/`: Harmony binaries used to reproduce the build.
 - `tests/`: regression tests and their runners.
 - `docs/`: reference documentation, release validation and six current icon families.
-- `README.md`, `SOURCE-README.md`, `CAMBIOS-0.8.5.md`: usage, build and review notes.
+- `README.md`, `SOURCE-README.md`, `CAMBIOS-*.md`: usage, build and review notes.
 - `COPYING`, `THIRD_PARTY_NOTICES.md`, `docs/LICENSE-*.txt`: licenses and attribution.
 
 Generated build directories and temporary test fixtures are excluded from the ZIP. Rhino/Grasshopper SDK binaries are not redistributed.

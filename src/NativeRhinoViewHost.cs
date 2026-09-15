@@ -15,6 +15,9 @@ namespace Polymita {
   internal event Action Ready;
   internal bool HasView { get { return view!=null && frame!=IntPtr.Zero && IsWindow(frame); } }
   internal RhinoViewport Viewport { get { return HasView?view.ActiveViewport:null; } }
+  // Which viewport is ours, for anything watching Rhino as a whole and needing to
+  // tell this view's events from every other Rhino view's.
+  internal Guid ViewportId { get { return HasView?view.ActiveViewportID:Guid.Empty; } }
   internal NativeRhinoViewHost() {
    BackColor=Color.White; AccessibleName="Interactive Rhino viewport";
    timer.Tick+=delegate { Sync(); };
