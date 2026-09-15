@@ -7,6 +7,7 @@ Polymita is the scientific name used internationally for Cuba's painted snails. 
 ## Changes in 0.8.4
 
 - **Alt-dragging a copy** and **double-clicking a relay** are Grasshopper's own gestures again. The alignment drag was taking the interaction on any left press that landed on something already selected, which includes the second press of a double-click and a press with Alt held, so Grasshopper never saw either gesture. It now stands aside for both.
+- The assembly version matches the documented one again, and the toolbar icons are also published as PNG under `docs/icons/`, rendered from `src/Brand.cs`.
 
 ## Changes in 0.8.3
 

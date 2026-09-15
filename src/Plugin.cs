@@ -14,8 +14,8 @@ using System.Windows.Forms;
 
 [assembly: AssemblyTitle("Polymita")]
 [assembly: AssemblyDescription("Favorites, recipes and canvas tools for Grasshopper")]
-[assembly: AssemblyVersion("0.7.0.0")]
-[assembly: AssemblyFileVersion("0.7.0.0")]
+[assembly: AssemblyVersion("0.8.4.0")]
+[assembly: AssemblyFileVersion("0.8.4.0")]
 [assembly: AssemblyCopyright("WireShelf contributors, 2026. GPL-3.0-or-later.")]
 
 namespace WireShelf
@@ -27,7 +27,7 @@ namespace WireShelf
         public override Guid Id { get { return new Guid("0b6a3316-b9de-4441-8c44-2b893cf33731"); } }
         public override string AuthorName { get { return "Polymita"; } }
         public override string AuthorContact { get { return ""; } }
-        public override string Version { get { return "0.7.0"; } }
+        public override string Version { get { return "0.8.4"; } }
         public override Bitmap Icon { get { return ShelfRuntime.Icon; } }
     }
     public sealed class Priority : GH_AssemblyPriority
@@ -193,7 +193,7 @@ namespace WireShelf
             Tool("absorb", null, delegate { RunOperation("absorb"); });
             menu.DropDownItems.Add("Customise shortcuts…", null, delegate { EditShortcuts(); });
             menu.DropDownItems.Add("About / Help", null, delegate {
-                MessageBox.Show(host, "Polymita 0.8.0 · Rhino 8 / Windows\n\n" +
+                MessageBox.Show(host, "Polymita 0.8.4 · Rhino 8 / Windows\n\n" +
                     "Drag a wire from an input or output and release over empty canvas. You can also click a port and then empty canvas.\n\n" +
                     "Double Shift: insert without a wire at the cursor. Click an icon to insert; right-click to choose a port.\n\n" +
                     "Ctrl + left drag cuts wires. Shift while dragging constrains the move.\n\n" +
