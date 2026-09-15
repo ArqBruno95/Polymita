@@ -132,3 +132,33 @@ Sobre la captura anotada:
   opciones entre paréntesis: esas son los botones.
 - Mientras la fila está plegada no se observa el ratón de Rhino ni se consulta el
   prompt: el panel solo pregunta por lo que está a la vista.
+
+## Corrección: las flechas no desplegaban nada
+
+Las dos flechas aparecían, pero al pulsarlas no salía ninguna franja. El fallo
+estaba en el manejador del clic:
+
+```csharp
+internal Disclosure(string caption, bool open, ...) {
+ this.open = open;
+ Click += delegate { open = !open; ... };   // invierte el PARÁMETRO
+}
+```
+
+Dentro del `delegate`, `open` se refiere al **argumento del constructor**
+capturado por el closure, no al campo `this.open`. Cada clic invertía esa copia,
+el campo seguía en `false`, la flecha nunca cambiaba de dibujo y el panel volvía
+a poner `Visible = false` sobre la franja. El argumento se llama ahora `start`, y
+el cambio de estado vive en un método `Toggle()` que escribe el campo.
+
+De paso se ha aplanado la disposición. Cada franja estaba metida con su flecha en
+una tabla propia con alto automático, es decir tres niveles de alto negociado
+entre la franja y el panel. Ahora la barra de comandos, la fila de ayudas y las
+dos flechas se acoplan directamente al panel, el mismo mecanismo que ya usa la
+barra VIEW/DISPLAY; un control oculto simplemente no ocupa sitio. Al desplegar o
+plegar, el panel rehace su disposición y reposiciona la ventana de Rhino en el
+acto, en vez de esperar al siguiente tic de 100 ms.
+
+`ViewportAidsTests` incluye ahora cuatro comprobaciones sobre la flecha: que
+empieza plegada, que un clic la abre y avisa una sola vez, que otro clic la
+vuelve a plegar, y que una franja dejada abierta se dibuja abierta al volver.

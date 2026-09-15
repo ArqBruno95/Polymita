@@ -152,23 +152,29 @@ namespace Polymita {
  }
 
  // The arrow that shows or hides a strip. It stays where it was last put, here
- // and across restarts, rather than folding away again on its own.
+ // and across restarts, rather than folding away again on its own. Its height is
+ // fixed rather than measured: a folded strip must cost a known, small band, and
+ // nothing about that should depend on a preferred size being negotiated.
  internal sealed class Disclosure : Button {
   readonly string caption;
   bool open;
   internal event Action Toggled;
-  internal Disclosure(string caption,bool open,ToolTip tips,string tip) {
-   this.caption=caption;this.open=open;
-   AutoSize=true;AutoSizeMode=AutoSizeMode.GrowAndShrink;FlatStyle=FlatStyle.Flat;
+  internal Disclosure(string caption,bool start,ToolTip tips,string tip) {
+   this.caption=caption;open=start;
+   AutoSize=false;Height=20;FlatStyle=FlatStyle.Flat;
    BackColor=Ui.Paper;ForeColor=Ui.Muted;Font=new System.Drawing.Font("Segoe UI",8F);
-   TextAlign=ContentAlignment.MiddleLeft;Margin=Padding.Empty;Padding=new Padding(2,0,6,0);MinimumSize=new Size(0,18);
+   TextAlign=ContentAlignment.MiddleLeft;Margin=Padding.Empty;Padding=new Padding(6,0,6,0);
    FlatAppearance.BorderSize=0;FlatAppearance.MouseOverBackColor=Color.FromArgb(240,232,214);
    tips.SetToolTip(this,tip);
-   Label();
-   Click+=delegate { open=!open;Label();if(Toggled!=null)Toggled(); };
+   Relabel();
+   Click+=delegate { Toggle(); };
   }
   internal bool Open { get { return open; } }
-  void Label() {
+  // Named apart from the constructor argument on purpose: written as open=!open
+  // inside the handler, this flipped the captured parameter and left the field
+  // alone, so the arrow never moved and the strip never came out.
+  internal void Toggle() { open=!open;Relabel();if(Toggled!=null)Toggled(); }
+  void Relabel() {
    Text=(open?"▾ ":"▸ ")+caption;
    AccessibleName=(open?"Hide ":"Show ")+caption;
   }

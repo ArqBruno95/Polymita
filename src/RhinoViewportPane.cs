@@ -47,7 +47,8 @@ namespace Polymita {
 
    commandLine=new RhinoCommandLine(tips,delegate { return ViewControl.HasView; },delegate { ViewControl.ActivateView(); });
    commandArrow=new Disclosure("Command",settings.ShowCommandLine,tips,"Show or hide Rhino's command line and its history.");
-   var head=Fold(DockStyle.Top,commandArrow,commandLine,true);
+   commandArrow.Dock=DockStyle.Top;
+   commandLine.Visible=commandArrow.Open;
 
    // One row, grouped by subject with a hairline between groups: the snaps, then
    // the status switches, then the distance Rhino would show in its own pane.
@@ -57,12 +58,21 @@ namespace Polymita {
    aids.AddReadout(distance);
    tips.SetToolTip(distance,"Distance from the last point picked in this view, in the document's units.");
    aidsArrow=new Disclosure("Osnap, Ortho, distance",settings.ShowModelAids,tips,"Show or hide Rhino's object snaps, status switches and distance readout.");
-   var foot=Fold(DockStyle.Bottom,aidsArrow,aids,false);
+   aidsArrow.Dock=DockStyle.Bottom;
+   aids.Dock=DockStyle.Bottom;aids.Padding=new Padding(8,2,8,2);
+   aids.Visible=aidsArrow.Open;
 
+   // Everything docks straight onto the panel. Nesting each strip with its arrow
+   // inside its own auto-sizing table put three levels of negotiated height
+   // between a folded strip and this panel, and a strip that comes back has to
+   // claim its height without any of that having to agree first.
    // Docking is resolved from the last control added to the first, so the order
-   // here reads backwards: the pickers claim the top edge, the command line the
-   // strip below them, the aids the bottom, and the view keeps all the rest.
-   Controls.Add(ViewControl);Controls.Add(foot);Controls.Add(head);Controls.Add(bar);
+   // here reads backwards: the pickers claim the top edge, then the command
+   // arrow and the command line, then the aids arrow at the very bottom with the
+   // aids above it, and the view keeps all the rest. A hidden control is skipped
+   // outright, so a folded strip costs nothing at all.
+   Controls.Add(ViewControl);Controls.Add(aids);Controls.Add(aidsArrow);
+   Controls.Add(commandLine);Controls.Add(commandArrow);Controls.Add(bar);
 
    views.SelectedIndexChanged+=delegate { Ui.Safe(ApplyView); };
    modes.SelectedIndexChanged+=delegate { Ui.Safe(ApplyMode); };
@@ -70,9 +80,10 @@ namespace Polymita {
    length.Changed+=delegate(string text) { distance.Text=text==null?"":text; };
    length.Enabled=aidsArrow.Open;
    commandArrow.Toggled+=delegate { Ui.Safe(delegate {
-    commandLine.Visible=commandArrow.Open;settings.ShowCommandLine=commandArrow.Open;ShelfRuntime.SaveToolboxSettings(); }); };
+    Reveal(commandLine,commandArrow.Open);
+    settings.ShowCommandLine=commandArrow.Open;ShelfRuntime.SaveToolboxSettings(); }); };
    aidsArrow.Toggled+=delegate { Ui.Safe(delegate {
-    aids.Visible=aidsArrow.Open;
+    Reveal(aids,aidsArrow.Open);
     // No reason to watch every mouse move in every Rhino view while the readout
     // that would show the result is folded away.
     length.Enabled=aidsArrow.Open;
@@ -91,17 +102,13 @@ namespace Polymita {
    pulse.Start();
   }
 
-  // An arrow and the strip it governs, in the smallest box that holds both: a
-  // folded strip contributes no height at all, so only the arrow is left.
-  static TableLayoutPanel Fold(DockStyle edge,Disclosure arrow,Control strip,bool arrowFirst) {
-   var box=new TableLayoutPanel { Dock=edge,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,
-    ColumnCount=1,RowCount=2,Margin=Padding.Empty,Padding=new Padding(8,0,8,2) };
-   box.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
-   box.RowStyles.Add(new RowStyle(SizeType.AutoSize));box.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-   strip.Visible=arrow.Open;
-   box.Controls.Add(arrow,0,arrowFirst?0:1);
-   box.Controls.Add(strip,0,arrowFirst?1:0);
-   return box;
+  // Show or fold a strip and settle the panel around it in the same breath. The
+  // docked view has to give the room back, and asking for the layout outright is
+  // cheaper than trusting a change of visibility to travel on its own.
+  void Reveal(Control strip,bool open) {
+   strip.Visible=open;
+   PerformLayout();
+   ViewControl.Sync();
   }
 
   void Poll() {

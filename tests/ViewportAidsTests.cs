@@ -67,6 +67,25 @@ public static class ViewportAidsTests
                     aid.On = was;
                 }
 
+                // The arrow has to move the field the panel reads, not a copy of it.
+                // Written as open=!open inside the click handler this flipped the
+                // captured constructor argument, so Open never changed and the strip
+                // it governs was hidden again the instant it was shown.
+                using (var tips = new System.Windows.Forms.ToolTip())
+                {
+                    var arrow = new Disclosure("Command", false, tips, "t");
+                    var raised = 0;
+                    arrow.Toggled += delegate { raised++; };
+                    Check(!arrow.Open && arrow.Text.StartsWith("▸"), "A strip starts folded, under a closed arrow");
+                    arrow.PerformClick();
+                    Check(arrow.Open && raised == 1 && arrow.Text.StartsWith("▾"), "Clicking the arrow opens the strip and says so");
+                    arrow.PerformClick();
+                    Check(!arrow.Open && raised == 2 && arrow.Text.StartsWith("▸"), "Clicking it again folds the strip back");
+                    var already = new Disclosure("Aids", true, tips, "t");
+                    Check(already.Open && already.Text.StartsWith("▾"), "A strip left open is drawn open the next time round");
+                    arrow.Dispose(); already.Dispose();
+                }
+
                 var metres = ModelAids.Format(3.6042);
                 Check(metres.Split(' ').Length == 2 && metres.Split(' ')[1].Length > 0,
                     "A distance is written as a number and the document's unit: " + metres);
