@@ -162,3 +162,50 @@ acto, en vez de esperar al siguiente tic de 100 ms.
 `ViewportAidsTests` incluye ahora cuatro comprobaciones sobre la flecha: que
 empieza plegada, que un clic la abre y avisa una sola vez, que otro clic la
 vuelve a plegar, y que una franja dejada abierta se dibuja abierta al volver.
+
+## El wire que se queda en el cursor, recuperado
+
+Vuelve el gesto de dos clics, pero ahora sin costarle la selección al componente.
+
+**Qué hace:** clicas el *grip* de un puerto —el círculo que sobresale de la
+cápsula— y el wire se queda enganchado al cursor. El siguiente clic lo deja
+puesto:
+
+- sobre un puerto **del sentido contrario** (un output si salió de un input, y al
+  revés) → lo conecta ahí y ya está;
+- sobre el canvas vacío o **sobre el área de un grupo** → abre la lista de
+  comandos favoritos;
+- sobre la cápsula de un componente → suelta el wire sin conectar nada.
+
+Arrastrar manteniendo el botón sigue funcionando igual, en un solo gesto.
+
+**Por qué esta vez no rompe la selección.** El problema anterior era que se
+enganchaba el wire ante *cualquier* clic que Grasshopper convirtiera en un wire,
+y eso incluye pulsar sobre el nombre de un parámetro dentro de la cápsula. Esa
+liberación es justo la que Grasshopper usa para seleccionar el componente.
+
+Ahora decide **dónde ha caído la pulsación**:
+
+- fuera de toda cápsula (el círculo que sobresale, o el canvas junto a él) → el
+  wire se queda en el cursor;
+- dentro de la cápsula (nombre de parámetro, icono) → se devuelve a Grasshopper,
+  que selecciona el componente.
+
+Un grupo no cuenta como cápsula, así que los grips de un componente agrupado
+siguen enganchando.
+
+**Dos detalles tomados de QuickConnection**, que es la referencia que me pasaste:
+
+- Al cerrar, la búsqueda del puerto de destino mira solo el sentido contrario
+  (`FindAttributeByGrip(punto, false, !desdeInput, desdeInput, 20)`), en vez de
+  ambos. Así el propio extremo del wire y sus vecinos de la misma cápsula no
+  pueden hacerse pasar por destino.
+- Tolerancia de 20 unidades en ese destino: un wire que se deja caer sobre un
+  puerto va apuntado a él.
+
+**Comprobaciones nuevas:** `tests/run-wire-gesture.py` ejecuta siete
+comprobaciones sobre un Canvas aislado: que el clic en el grip deja el wire en el
+cursor, que el clic siguiente sobre un input lo conecta, que la liberación
+posterior no repite la acción, que el mismo clic dentro de la cápsula se devuelve
+a Grasshopper, que dejarlo sobre el canvas vacío o sobre un grupo pide favoritos
+sin conectar nada, y que el arrastre de toda la vida sigue conectando.

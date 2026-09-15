@@ -200,7 +200,8 @@ namespace Polymita
             menu.DropDownItems.Add("Customise shortcuts…", null, delegate { EditShortcuts(); });
             menu.DropDownItems.Add("About / Help", null, delegate {
                 MessageBox.Show(host, "Polymita 0.8.7 · Rhino 8 / Windows\n\n" +
-                    "Drag a wire from an input or output and release over empty canvas to pick a favorite.\n\n" +
+                    "Drag a wire from a port and release over empty canvas or a group to pick a favorite.\n\n" +
+                    "Or click the grip once: the wire rides the cursor until the next click, which joins a port or picks a favorite. Clicking inside a capsule selects it, as always.\n\n" +
                     "The Rhino viewport carries Rhino's command line and its options, the object snaps, the status toggles and a distance readout.\n\n" +
                     "Double Shift: insert without a wire at the cursor. Click an icon to insert; right-click to choose a port.\n\n" +
                     "Ctrl + left drag cuts wires. Shift while dragging constrains the move.\n\n" +
@@ -370,11 +371,26 @@ namespace Polymita
             var interaction = canvas.ActiveInteraction;
             if (interaction == null || interaction.GetType() != typeof(GH_WireInteraction)) return;
             var ev = new GH_CanvasMouseEvent(canvas.Viewport, e);
-            var attr = canvas.Document.FindAttributeByGrip(ev.CanvasLocation, false, true, true, ShelfWireInteraction.GripReach);
+            var here = ev.CanvasLocation;
+            // Grasshopper has already decided this press starts a wire, so the search
+            // only has to name which port it came from; a reach that keeps its size on
+            // screen finds the grip at any zoom.
+            var reach = (int)Math.Max(ShelfWireInteraction.GripReach, 16F / Math.Max(0.05F, canvas.Viewport.Zoom));
+            var attr = canvas.Document.FindAttributeByGrip(here, false, true, true, reach);
             var source = attr == null ? null : attr.DocObject as IGH_Param;
             if (source == null) return;
-            var fromInput = attr.HasInputGrip && (!attr.HasOutputGrip || Distance(ev.CanvasLocation, attr.InputGrip) <= Distance(ev.CanvasLocation, attr.OutputGrip));
-            canvas.ActiveInteraction = new ShelfWireInteraction(canvas, ev, source, fromInput);
+            var fromInput = attr.HasInputGrip && (!attr.HasOutputGrip || Distance(here, attr.InputGrip) <= Distance(here, attr.OutputGrip));
+            // Where the press landed decides whether a plain click may leave the wire
+            // on the cursor. On the grip that stands out past the capsule there is
+            // nothing else it could mean. Inside the capsule the press belongs to the
+            // component: Grasshopper answers that release by selecting it, and holding
+            // a wire there is what once left a dead ring around every input and output.
+            // A group is not a capsule, so a grouped component's grips still count.
+            var under = canvas.Document.FindAttribute(here, true);
+            var onGrip = under == null || under.DocObject is GH_Group;
+            var top = attr.GetTopLevel;
+            canvas.ActiveInteraction = new ShelfWireInteraction(canvas, ev, source, fromInput, onGrip,
+                top == null ? RectangleF.Empty : top.Bounds);
         }
         private static bool ModifierKeysHeld() { return Control.ModifierKeys != Keys.None; }
         internal static float Distance(PointF a, PointF b)
@@ -383,36 +399,81 @@ namespace Polymita
 
     // The interaction extension point follows QuickConnection. Native wire movement and
     // connection are delegated to GH_WireInteraction; no private SDK fields are inspected.
+    //
+    // Two ways to draw a wire, and they end the same way. Hold the button down from a
+    // port and let go where the wire should end, or click the port once and let the
+    // wire ride the cursor until the next click. Either way, landing on a port of the
+    // opposite kind joins them, and landing on bare canvas or on a group asks for a
+    // favorite to insert.
     internal sealed class ShelfWireInteraction : GH_WireInteraction
     {
-        // Grasshopper's own grip radius, in canvas units, for both the search that
-        // names the wire's source and the one that rules the palette out on release.
+        // Grasshopper's own grip radius, in canvas units, for naming the wire's source.
         internal const int GripReach = 10;
+        // The reach at the far end. A wire being put down on a port is aimed at it, so
+        // the target is taken generously; QuickConnection reads its targets the same way.
+        internal const int JoinReach = 20;
+        // A press that travels less than this on screen is a click, not a drag.
+        internal const int ClickSlop = 6;
         private readonly IGH_Param source;
         private readonly bool fromInput;
+        private readonly bool canHold;
+        private readonly RectangleF owner;
         private readonly Point origin;
         private readonly GH_Document document;
-        internal ShelfWireInteraction(GH_Canvas canvas, GH_CanvasMouseEvent e, IGH_Param source, bool fromInput) : base(canvas, e, source)
-        { this.source = source; this.fromInput = fromInput; origin = e.ControlLocation; document = canvas.Document; }
+        private bool held, settled, done;
+        internal ShelfWireInteraction(GH_Canvas canvas, GH_CanvasMouseEvent e, IGH_Param source, bool fromInput,
+            bool canHold, RectangleF owner) : base(canvas, e, source)
+        {
+            this.source = source; this.fromInput = fromInput; this.canHold = canHold; this.owner = owner;
+            origin = e.ControlLocation; document = canvas.Document;
+        }
+        // True while the wire is riding the cursor with no button held.
+        internal bool Held { get { return held; } }
+        public override GH_ObjectResponse RespondToMouseDown(GH_Canvas sender, GH_CanvasMouseEvent e)
+        {
+            if (e.Button == MouseButtons.Right) return GH_ObjectResponse.Release;
+            // A wire riding the cursor is put down by the next press, wherever it lands.
+            if (held && e.Button == MouseButtons.Left) return Settle(sender, e);
+            return base.RespondToMouseDown(sender, e);
+        }
         public override GH_ObjectResponse RespondToMouseUp(GH_Canvas sender, GH_CanvasMouseEvent e)
         {
             if (sender.Document != document) return GH_ObjectResponse.Release;
             if (e.Button != MouseButtons.Left) return base.RespondToMouseUp(sender, e);
-            // A press that never moved is a click on the capsule, not a wire drag, and
-            // Grasshopper answers it by selecting the component. Nothing of ours may
-            // stand between the two: holding the wire on the cursor here is what made
-            // the area around every input and output refuse to select anything.
-            if (ShelfRuntime.Distance(origin, e.ControlLocation) < 6) return base.RespondToMouseUp(sender, e);
+            if (!settled)
+            {
+                settled = true;
+                if (ShelfRuntime.Distance(origin, e.ControlLocation) < ClickSlop)
+                {
+                    // A click that went nowhere. From the grip it hands the wire to the
+                    // cursor; from inside the capsule it is Grasshopper's to answer, and
+                    // what Grasshopper does with it is select the component.
+                    if (!canHold) return base.RespondToMouseUp(sender, e);
+                    held = true;
+                    return GH_ObjectResponse.Ignore;
+                }
+            }
+            return Settle(sender, e);
+        }
+        // Where the wire is put down. Called from the release that ends a drag and from
+        // the press that ends a held wire, so it must only ever run once.
+        private GH_ObjectResponse Settle(GH_Canvas sender, GH_CanvasMouseEvent e)
+        {
+            if (done) return GH_ObjectResponse.Release;
+            done = true; held = false;
             if (Control.ModifierKeys != Keys.None) return base.RespondToMouseUp(sender, e);
-            // Releasing on a port is a connection attempt, never a request for the
-            // palette. The reach is Grasshopper's own, so the plug-in claims no more
-            // room around a grip than Grasshopper does.
-            if (document.FindAttributeByGrip(e.CanvasLocation, false, true, true, GripReach) != null)
+            // Only a port this wire could actually join counts: an output when it left
+            // an input and the other way round. Searching both would let the wire's own
+            // end, and its neighbours on the same capsule, pass for a target.
+            if (document.FindAttributeByGrip(e.CanvasLocation, false, !fromInput, fromInput, JoinReach) != null)
                 return base.RespondToMouseUp(sender, e);
-            // A group counts as an attribute under the cursor, so releasing a wire onto
+            // A group counts as an attribute under the cursor, so putting a wire down on
             // one used to fall through to native behaviour and never open the palette.
             var under = document.FindAttribute(e.CanvasLocation, true);
             if (under != null && !(under.DocObject is GH_Group)) return base.RespondToMouseUp(sender, e);
+            // Back on the capsule it came from: that is a wire being abandoned, not a
+            // place to insert something.
+            if (owner.Contains(e.CanvasLocation)) return base.RespondToMouseUp(sender, e);
             var screen = sender.PointToScreen(e.ControlLocation); var position = e.CanvasLocation;
             sender.BeginInvoke(new Action(delegate {
                 if (!sender.IsDisposed && sender.Document == document) ShelfRuntime.ShowPalette(sender, source, fromInput, position, screen);

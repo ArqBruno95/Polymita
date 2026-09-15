@@ -4,7 +4,11 @@ Favorites, configured component recipes and canvas tools for **Grasshopper in Rh
 
 ## Changes in 0.8.7
 
-**Ports belong to Grasshopper again.** Clicking an input or output selects the component, as it always did in Grasshopper. Pressing on a port area is how Grasshopper itself starts a wire, and Polymita was answering the release that follows a plain click with `Ignore`, keeping the wire armed on the cursor. Grasshopper never saw that release, so nothing was selected and the next click went to the waiting wire, which read as an unresponsive ring around every port. A release that follows a press which never moved now goes straight back to Grasshopper, and the reach used to rule the palette out on a real drag is Grasshopper's own grip radius rather than a widened one. Releasing a dragged wire over empty canvas or a group still opens the palette.
+**Two ways to draw a wire, and the capsule still selects.** Click a port's grip — the circle that stands out past the capsule — and the wire rides the cursor until the next click: on a port of the opposite kind it joins them, on bare canvas or on a group it opens the favorites. Holding the button down from the grip and releasing where the wire should end does the same thing in one gesture.
+
+Where the press lands is what decides. Pressing inside a capsule, on a parameter's name or on the icon, is Grasshopper's: its answer to that release is to select the component, and a wire left riding the cursor there is what once made the area around every input and output refuse to select anything. Dragging out from inside a capsule still draws a wire, and still opens the favorites when it lands on nothing.
+
+At the far end only a port the wire could actually join counts — an output when it left an input and the other way round — read with the same reach QuickConnection uses, so a wire aimed at a port finds it and its own end never passes for a target.
 
 **Wire colour is no longer Polymita's business.** The whole highlight subsystem is gone: the `GH_Skin` selection colours it saved and restored, the stored preference and its colour, the Wires tab checkbox and colour picker, and every call site. Polymita draws the path a wire follows; what colour it is drawn in is Grasshopper's decision alone.
 
@@ -49,7 +53,7 @@ Manual installation: place `release/Polymita.gha` in that folder, replacing the 
 
 ### Favorites and recipes
 
-Drag a wire from an input or output and release it over empty canvas or a group to open the palette. Click a favorite to insert it; right-click to choose a port or insert without a wire. Double Shift opens favorites at the pointer without an existing wire. Search preserves section and item order, without filtering favorites by wire data type.
+Drag a wire from an input or output and release it over empty canvas or a group to open the palette, or click the port's grip once and click again where the wire should end. Click a favorite to insert it; right-click to choose a port or insert without a wire. Double Shift opens favorites at the pointer without an existing wire. Search preserves section and item order, without filtering favorites by wire data type.
 
 The library editor uses a draft until **Save**. Add/reorder/rename sections, components and text operations; move favorites between sections; import/export libraries; capture or update a configured component recipe. Recipes retain native component configuration while removing external connections from the saved copy. Import accepts ordinary JSON, including older exported libraries. New exports use `.polymita.json`.
 
