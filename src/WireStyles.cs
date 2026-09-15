@@ -14,8 +14,6 @@ namespace Polymita
     {
         private static object harmony;
         private static readonly Dictionary<MethodInfo, MethodInfo> patches = new Dictionary<MethodInfo, MethodInfo>();
-        private static Color beforeA, beforeB, applied;
-        private static bool colorsOwned;
         public static bool Polylines { get; private set; }
         public static int Variant;
         // Why the patch could not be installed, for the Wires tab to report on demand.
@@ -232,22 +230,10 @@ namespace Polymita
                 harmony.GetType().GetMethod("Unpatch", new[] { typeof(MethodBase), typeof(MethodInfo) }).Invoke(harmony, new object[] { pair.Key, pair.Value });
             patches.Clear(); harmony = null;
         }
-        public static void SetHighlight(bool enabled, Color color)
-        {
-            if (enabled)
-            {
-                if (!colorsOwned) { beforeA = GH_Skin.wire_selected_a; beforeB = GH_Skin.wire_selected_b; colorsOwned = true; }
-                applied = Color.FromArgb(255, color); GH_Skin.wire_selected_a = applied; GH_Skin.wire_selected_b = applied;
-            }
-            else if (colorsOwned)
-            {
-                if (GH_Skin.wire_selected_a == applied) GH_Skin.wire_selected_a = beforeA;
-                if (GH_Skin.wire_selected_b == applied) GH_Skin.wire_selected_b = beforeB;
-                colorsOwned = false;
-            }
-            Redraw();
-        }
-        public static void Reset() { SetPolylines(false); SetHighlight(false, Color.Empty); }
+        // Polymita draws the path a wire follows and nothing else. Wire colour belongs
+        // to Grasshopper: the plug-in neither reads nor writes GH_Skin, so selected and
+        // unselected wires keep whatever colour the running Grasshopper gives them.
+        public static void Reset() { SetPolylines(false); }
         private static void Redraw() { if (Grasshopper.Instances.ActiveCanvas != null) Grasshopper.Instances.ActiveCanvas.Invalidate(); }
     }
 }

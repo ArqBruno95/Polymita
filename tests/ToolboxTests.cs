@@ -42,10 +42,10 @@ public static class ToolboxTests
         var root = Path.Combine(Path.GetTempPath(), "Polymita-toolbox-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root); var file = Path.Combine(root, "settings.json");
         var settings = ToolboxSettings.Load(file);
-        Check(settings.Polylines && settings.WireVariant==1 && !settings.Highlight, "New settings retain the 0.8.4 defaults: adaptive polylines on, highlighting off");
-        settings.Polylines = true; settings.Highlight = true; settings.SelectedArgb = Color.Blue.ToArgb(); settings.View = "Top"; settings.PanelWidth = 500;
+        Check(settings.Polylines && settings.WireVariant==1, "New settings retain the adaptive polyline defaults");
+        settings.Polylines = true; settings.View = "Top"; settings.PanelWidth = 500;
         settings.Save(file); var saved = ToolboxSettings.Load(file);
-        Check(saved.Polylines && saved.Highlight && saved.SelectedArgb == Color.Blue.ToArgb() && saved.View == "Top", "Round-trip tools preferences");
+        Check(saved.Polylines && saved.WireVariant == 1 && saved.View == "Top", "Round-trip tools preferences");
         settings.PanelWidth = 10000; settings.Save(file);
         Check(ToolboxSettings.Load(file).PanelWidth == 900 && File.Exists(file + ".bak"), "Validated width and atomic backup");
         File.WriteAllText(file, "broken json"); bool rejected = false;

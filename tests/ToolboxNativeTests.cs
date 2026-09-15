@@ -46,11 +46,11 @@ public static class ToolboxNativeTests
                     log.WriteLine("Canvas centering is verified interactively; a minimized host has no viewport extent.");
                     canvas.Document = original;
                 }
+                // Wire colour is Grasshopper's. Enabling and resetting the whole wire
+                // subsystem must leave the skin exactly as it was found.
                 var a = GH_Skin.wire_selected_a; var b = GH_Skin.wire_selected_b;
-                WireStyles.SetHighlight(true,Color.OrangeRed);
-                Check(GH_Skin.wire_selected_a == Color.FromArgb(255,Color.OrangeRed) && GH_Skin.wire_selected_b == Color.FromArgb(255,Color.OrangeRed), "Both selected wire ends use chosen color");
-                WireStyles.SetHighlight(false,Color.Empty);
-                Check(GH_Skin.wire_selected_a == a && GH_Skin.wire_selected_b == b, "Selection colors restore exactly");
+                WireStyles.SetPolylines(true); WireStyles.Reset();
+                Check(GH_Skin.wire_selected_a == a && GH_Skin.wire_selected_b == b, "The plug-in never writes the wire selection colours");
                 WireStyles.SetPolylines(false); WireStyles.Variant=0; byte[] previous;
                 using (var path = GH_Painter.ConnectionPath(new PointF(0,0),new PointF(100,80),GH_WireDirection.right,GH_WireDirection.left)) previous = path.PathTypes;
                 WireStyles.SetPolylines(true);

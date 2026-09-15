@@ -1,5 +1,4 @@
 using System;
-using System.Drawing;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
@@ -10,8 +9,6 @@ namespace Polymita
     public sealed class ToolboxSettings
     {
         [DataMember] public bool Polylines = true;
-        [DataMember] public bool Highlight;
-        [DataMember] public int SelectedArgb = Color.FromArgb(255, 222, 76, 36).ToArgb();
         [DataMember] public int PanelWidth = 420;
         [DataMember] public string View = "Perspective";
         [DataMember] public Guid DisplayMode;

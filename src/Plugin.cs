@@ -122,7 +122,6 @@ namespace Polymita
             // Reported by the Wires tab when the option is next touched rather than as a
             // dialog on every start, which is what turning this on by default would mean.
             try { WireStyles.SetPolylines(toolboxSettings.Polylines); } catch (Exception ex) { WireStyles.LastFailure = ex.Message; }
-            WireStyles.SetHighlight(toolboxSettings.Highlight,Color.FromArgb(toolboxSettings.SelectedArgb));
             shiftFilter = new ShiftFilter();
             Instances.CanvasCreated += Attach;
             Instances.CanvasDestroyed += Detach;
@@ -295,7 +294,6 @@ namespace Polymita
                 if (toolboxSettings == null) toolboxSettings = ToolboxSettings.Load(ToolboxPath);
                 if (toolbox == null)
                 {
-                    WireStyles.SetHighlight(toolboxSettings.Highlight, Color.FromArgb(toolboxSettings.SelectedArgb));
                     try { WireStyles.SetPolylines(toolboxSettings.Polylines); } catch (Exception ex) { Ui.Error(ex); }
                     toolbox = new Toolbox(canvas, toolboxSettings, ToolboxPath);
                     canvas.Disposed += delegate { if (toolbox != null) { toolbox.Dispose(); toolbox = null; } };
@@ -371,7 +369,7 @@ namespace Polymita
             var interaction = canvas.ActiveInteraction;
             if (interaction == null || interaction.GetType() != typeof(GH_WireInteraction)) return;
             var ev = new GH_CanvasMouseEvent(canvas.Viewport, e);
-            var attr = canvas.Document.FindAttributeByGrip(ev.CanvasLocation, false, true, true, 10);
+            var attr = canvas.Document.FindAttributeByGrip(ev.CanvasLocation, false, true, true, ShelfWireInteraction.GripReach);
             var source = attr == null ? null : attr.DocObject as IGH_Param;
             if (source == null) return;
             var fromInput = attr.HasInputGrip && (!attr.HasOutputGrip || Distance(ev.CanvasLocation, attr.InputGrip) <= Distance(ev.CanvasLocation, attr.OutputGrip));
@@ -386,35 +384,29 @@ namespace Polymita
     // connection are delegated to GH_WireInteraction; no private SDK fields are inspected.
     internal sealed class ShelfWireInteraction : GH_WireInteraction
     {
+        // Grasshopper's own grip radius, in canvas units, for both the search that
+        // names the wire's source and the one that rules the palette out on release.
+        internal const int GripReach = 10;
         private readonly IGH_Param source;
         private readonly bool fromInput;
         private readonly Point origin;
         private readonly GH_Document document;
-        private bool firstRelease = true;
         internal ShelfWireInteraction(GH_Canvas canvas, GH_CanvasMouseEvent e, IGH_Param source, bool fromInput) : base(canvas, e, source)
         { this.source = source; this.fromInput = fromInput; origin = e.ControlLocation; document = canvas.Document; }
-        public override GH_ObjectResponse RespondToMouseDown(GH_Canvas sender, GH_CanvasMouseEvent e)
-        {
-            if (e.Button == MouseButtons.Right) return GH_ObjectResponse.Release;
-            return e.Button == MouseButtons.Left ? RespondToMouseUp(sender, e) : base.RespondToMouseDown(sender, e);
-        }
         public override GH_ObjectResponse RespondToMouseUp(GH_Canvas sender, GH_CanvasMouseEvent e)
         {
             if (sender.Document != document) return GH_ObjectResponse.Release;
             if (e.Button != MouseButtons.Left) return base.RespondToMouseUp(sender, e);
-            // Letting go without having moved arms the wire and leaves it on the cursor,
-            // so a port can be joined with two clicks instead of one held drag. This has
-            // to come before any grip search: that release is still on the source's own
-            // grip, and handing it to Grasshopper there is what ends the wire.
-            var isClick = ShelfRuntime.Distance(origin, e.ControlLocation) < 6;
-            if (firstRelease && isClick) { firstRelease = false; return GH_ObjectResponse.Ignore; }
-            firstRelease = false;
+            // A press that never moved is a click on the capsule, not a wire drag, and
+            // Grasshopper answers it by selecting the component. Nothing of ours may
+            // stand between the two: holding the wire on the cursor here is what made
+            // the area around every input and output refuse to select anything.
+            if (ShelfRuntime.Distance(origin, e.ControlLocation) < 6) return base.RespondToMouseUp(sender, e);
             if (Control.ModifierKeys != Keys.None) return base.RespondToMouseUp(sender, e);
-            // Any grip, either direction, measured in screen pixels rather than canvas
-            // units: releasing a wire near a port is a connection attempt, never a request
-            // for the palette, and at low zoom ten canvas units is only a pixel or two.
-            var reach = (int)Math.Max(10F, 16F/Math.Max(0.05F, sender.Viewport.Zoom));
-            if (document.FindAttributeByGrip(e.CanvasLocation, false, true, true, reach) != null)
+            // Releasing on a port is a connection attempt, never a request for the
+            // palette. The reach is Grasshopper's own, so the plug-in claims no more
+            // room around a grip than Grasshopper does.
+            if (document.FindAttributeByGrip(e.CanvasLocation, false, true, true, GripReach) != null)
                 return base.RespondToMouseUp(sender, e);
             // A group counts as an attribute under the cursor, so releasing a wire onto
             // one used to fall through to native behaviour and never open the palette.

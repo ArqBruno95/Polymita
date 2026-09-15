@@ -48,21 +48,15 @@ internal sealed class Toolbox : IDisposable {
   var enabled=new CheckBox { Text="Draw segmented wires",AutoSize=true,Checked=settings.Polylines && WireStyles.Polylines };
   var variant=new ComboBox { DropDownStyle=ComboBoxStyle.DropDownList,Width=370,AccessibleName="Wire style" };
   variant.Items.AddRange(new object[] { "Two orthogonal segments","Adaptive three-segment wire" }); variant.SelectedIndex=settings.WireVariant;
-  var highlight=new CheckBox { Text="Highlight selected connections",AutoSize=true,Checked=settings.Highlight };
-  var color=Ui.Button("Selection color…",delegate {
-   using(var dialog=new ColorDialog { Color=Color.FromArgb(settings.SelectedArgb),FullOpen=true })
-   if(dialog.ShowDialog(Instances.DocumentEditor)==DialogResult.OK) { settings.SelectedArgb=dialog.Color.ToArgb(); WireStyles.SetHighlight(settings.Highlight,dialog.Color); Save(); canvas.Invalidate(); }
-  });
   Action apply=delegate {
-   settings.Polylines=enabled.Checked; settings.WireVariant=variant.SelectedIndex; settings.Highlight=highlight.Checked;
+   settings.Polylines=enabled.Checked; settings.WireVariant=variant.SelectedIndex;
    WireStyles.Variant=settings.WireVariant;
    try { WireStyles.SetPolylines(settings.Polylines); } catch(Exception ex) { enabled.Checked=false; Ui.Error(ex); }
-   WireStyles.SetHighlight(settings.Highlight,Color.FromArgb(settings.SelectedArgb)); Save(); canvas.Invalidate();
+   Save(); canvas.Invalidate();
   };
-  enabled.CheckedChanged+=delegate { apply(); }; variant.SelectedIndexChanged+=delegate { apply(); }; highlight.CheckedChanged+=delegate { apply(); };
- 
+  enabled.CheckedChanged+=delegate { apply(); }; variant.SelectedIndexChanged+=delegate { apply(); };
   panel.Controls.AddRange(new Control[] { enabled,variant,
-   new Label { Text="Adaptive: horizontal ends and an automatic diagonal.\nAligned ports may produce a straight wire.",AutoSize=true,Margin=new Padding(0,10,0,16) },highlight,color }); return panel;
+   new Label { Text="Adaptive: horizontal ends and an automatic diagonal.\nAligned ports may produce a straight wire.\nWire colour stays under Grasshopper's control.",AutoSize=true,Margin=new Padding(0,10,0,16) } }); return panel;
  }
  Control LabelOptions() {
   var panel=Options();
